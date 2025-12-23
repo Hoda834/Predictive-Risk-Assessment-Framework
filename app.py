@@ -75,6 +75,54 @@ def domain_label(d: RiskDomain) -> str:
     }
     return labels.get(d, d.value)
 
+def action_template(domain: RiskDomain, level: str) -> list[str]:
+    if level == "acceptable":
+        return ["Proceed with monitoring", "Record decision and rationale", "Reassess at next checkpoint"]
+
+    if domain == RiskDomain.REGULATORY_COMPLIANCE:
+        return [
+            "Create or update traceability matrix",
+            "Define acceptance criteria for verification checks",
+            "Schedule design review and document outputs",
+        ]
+    if domain == RiskDomain.DATA_EVIDENCE:
+        return [
+            "Define data capture plan for this stage",
+            "Assign data owner and quality checks",
+            "Create audit trail entries for decisions and changes",
+        ]
+    if domain == RiskDomain.DECISION_GOVERNANCE:
+        return [
+            "Define escalation thresholds and owners",
+            "Document stop revise proceed criteria",
+            "Log decisions and trigger re assessment after actions",
+        ]
+    if domain == RiskDomain.MANUFACTURING:
+        return [
+            "Define critical to quality parameters",
+            "Set QC thresholds for batches",
+            "Plan pilot run and variability review",
+        ]
+    if domain == RiskDomain.SUPPLY_CHAIN:
+        return [
+            "Identify second source options",
+            "Define supplier change control requirements",
+            "Create supplier qualification checklist",
+        ]
+    if domain == RiskDomain.MEASUREMENT_INTEGRITY:
+        return [
+            "Define drift and stability indicators",
+            "Map environmental sensitivity scenarios",
+            "Plan verification tests for stability conditions",
+        ]
+    if domain == RiskDomain.DESIGN_MATURITY:
+        return [
+            "Document key assumptions and rationale",
+            "Review architecture complexity and justification",
+            "Define design revision actions and re assessment criteria",
+        ]
+    return ["Define corrective actions", "Assign owner", "Reassess after completion"]
+
 with st.sidebar:
     st.header("Context")
     activity_value = st.selectbox("Activity", options=[a.value for a in Activity], index=0)
@@ -83,17 +131,17 @@ with st.sidebar:
 ctx = Context(activity=Activity(activity_value), stage=ProjectStage(stage_value))
 active_domains = active_domains_for_activity(ctx.activity)
 
-st.subheader("Optional Input JSON")
 example_path = Path("data/examples/example_inputs.json")
 example_payload = {}
 if example_path.exists():
     example_payload = json.loads(example_path.read_text(encoding="utf-8"))
 
+st.subheader("Optional Input JSON")
 uploaded = st.file_uploader("Upload JSON", type=["json"])
 text_payload = st.text_area(
     "Paste JSON",
     value=json.dumps(example_payload, ensure_ascii=False, indent=2) if example_payload else "",
-    height=180,
+    height=160,
 )
 
 prefill = {}
@@ -130,8 +178,6 @@ for d in active_domains:
     for indicator_id in ids:
         indicator = INDICATOR_LIBRARY[indicator_id]
         st.markdown(f"**{indicator_id}**  {indicator.question}")
-
-        risk_active = True
 
         if indicator.answer_type.value == "yes_no":
             default = str(prefill_responses.get(indicator_id, "yes")).lower()
@@ -226,27 +272,28 @@ audit = build_audit_trail(classifications, decision, score_result.indicator_deta
 st.subheader("Decision Summary")
 
 left, right = st.columns(2)
-
 with left:
     st.write("Overall decision")
     st.write(decision.overall.value)
-
 with right:
     st.write("Active domains")
     st.write([domain_label(d) for d in active_domains])
 
-st.subheader("Domain Results")
+st.subheader("Action Plan")
 
-domain_rows = {}
+plan = {}
 for d in active_domains:
-    if d in classifications:
-        domain_rows[d.value] = {
-            "level": classifications[d].level.value,
-            "score": round(float(classifications[d].score), 3),
-            "top_indicators": [x[0] for x in expl.top_contributors_by_domain.get(d, [])],
-        }
+    if d not in classifications:
+        continue
+    level = classifications[d].level.value
+    plan[d.value] = {
+        "level": level,
+        "score": round(float(classifications[d].score), 3),
+        "top_indicators": [x[0] for x in expl.top_contributors_by_domain.get(d, [])],
+        "required_actions": action_template(d, level),
+    }
 
-st.json(domain_rows)
+st.json(plan)
 
 with st.expander("Full audit and raw details"):
     st.json([{"key": a.key, "value": a.value} for a in audit])
