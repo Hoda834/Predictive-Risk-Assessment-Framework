@@ -1,35 +1,34 @@
-import json
 import uuid
-from pathlib import Path
 import streamlit as st
 
-from praf.domain import Activity, ProjectStage, Context
-from praf.domain.risk_patterns import RiskPattern, UserRisk, suggest_pattern_from_text
-from praf.engine.guidance import generate_guidance
+from praf.domain import DecisionScenario, ControlDomain, UserRisk, get_matrix
+from praf.engine.control_planner import (
+    ControlStatus,
+    ControlCheck,
+    evaluate_decision_readiness,
+    build_empty_control_checks,
+)
 
-st.set_page_config(page_title="Predictive Risk Assessment Framework", layout="wide")
-st.title("Predictive Risk Assessment Framework")
+st.set_page_config(page_title="Risk Guided Control Planner", layout="wide")
+st.title("Risk Guided Control Planner")
 
 if "risks" not in st.session_state:
     st.session_state.risks = []
 
-with st.sidebar:
-    st.header("Context")
-    activity_value = st.selectbox("Activity", options=[a.value for a in Activity], index=0)
-    stage_value = st.selectbox("Stage", options=[s.value for s in ProjectStage], index=1)
+if "control_checks" not in st.session_state:
+    matrix0 = get_matrix(DecisionScenario.APPROVE_SUPPLIER_ONBOARDING)
+    st.session_state.control_checks = build_empty_control_checks(matrix0)
 
-    st.header("Optional industry")
-    industry_value = st.selectbox(
-        "Industry",
-        options=["generic", "medtech", "saas", "manufacturing", "finance", "other"],
-        index=0,
-    )
+decision_value = st.selectbox(
+    "Decision scenario",
+    options=[d.value for d in DecisionScenario],
+    index=0,
+)
 
-ctx = Context(activity=Activity(activity_value), stage=ProjectStage(stage_value))
+decision = DecisionScenario(decision_value)
+matrix = get_matrix(decision)
 
 st.subheader("Add risks")
-st.write("Write risks freely. You will be required to map each risk to a pattern before guidance is generated.")
-
 with st.form("add_risk_form", clear_on_submit=True):
     description = st.text_area("Risk description", height=90)
     owner = st.text_input("Owner", value="")
@@ -37,17 +36,15 @@ with st.form("add_risk_form", clear_on_submit=True):
 
 if submitted and description.strip():
     rid = str(uuid.uuid4())[:8]
-    suggestion = suggest_pattern_from_text(description)
     st.session_state.risks.append(
         {
             "risk_id": rid,
             "description": description.strip(),
             "owner": owner.strip(),
-            "suggested_pattern": suggestion.value,
-            "pattern": None,
             "likelihood": 3,
             "impact": 3,
             "detectability": 3,
+            "mapped_domain": None,
         }
     )
 
@@ -55,44 +52,37 @@ if not st.session_state.risks:
     st.stop()
 
 st.divider()
-st.subheader("Map risks to patterns")
+st.subheader("Map risks to control domains and set L I D")
 
-pattern_options = [p.value for p in RiskPattern]
+domain_options = ["select"] + [d.value for d in ControlDomain]
 
 for idx, r in enumerate(st.session_state.risks):
     st.markdown(f"### Risk {idx + 1}: {r['risk_id']}")
     st.write(r["description"])
 
-    c1, c2 = st.columns(2)
-    with c1:
-        st.write("Suggested pattern")
-        st.write(r["suggested_pattern"])
-    with c2:
-        selected = st.selectbox(
-            f"Pattern mapping {r['risk_id']}",
-            options=pattern_options,
-            index=pattern_options.index(r["suggested_pattern"]) if r["suggested_pattern"] in pattern_options else 0,
-        )
-        r["pattern"] = selected
+    sel = st.selectbox(
+        f"Control domain mapping {r['risk_id']}",
+        options=domain_options,
+        index=0 if not r.get("mapped_domain") else domain_options.index(r["mapped_domain"]),
+    )
+    r["mapped_domain"] = None if sel == "select" else sel
 
-    c3, c4, c5 = st.columns(3)
-    with c3:
+    c1, c2, c3 = st.columns(3)
+    with c1:
         r["likelihood"] = st.slider(f"Likelihood {r['risk_id']}", 1, 5, int(r["likelihood"]))
-    with c4:
+    with c2:
         r["impact"] = st.slider(f"Impact {r['risk_id']}", 1, 5, int(r["impact"]))
-    with c5:
+    with c3:
         r["detectability"] = st.slider(f"Detectability {r['risk_id']}", 1, 5, int(r["detectability"]))
 
-    remove = st.button(f"Remove {r['risk_id']}")
+    remove = st.button(f"Remove risk {r['risk_id']}")
     if remove:
         st.session_state.risks.pop(idx)
         st.rerun()
 
-st.divider()
-
-unmapped = [r for r in st.session_state.risks if not r.get("pattern")]
+unmapped = [r for r in st.session_state.risks if not r.get("mapped_domain")]
 if unmapped:
-    st.error("All risks must be mapped to a pattern before guidance can be generated.")
+    st.error("All risks must be mapped to a control domain before readiness can be evaluated.")
     st.stop()
 
 risks = []
@@ -105,69 +95,74 @@ for r in st.session_state.risks:
             likelihood=int(r["likelihood"]),
             impact=int(r["impact"]),
             detectability=int(r["detectability"]),
-            pattern=RiskPattern(r["pattern"]),
+            mapped_domain=ControlDomain(r["mapped_domain"]),
         )
     )
 
-summary = generate_guidance(ctx, risks)
+st.divider()
+st.subheader("Control and evidence checklist")
 
-st.subheader("Decision gate guidance")
-st.write(summary.overall_gate_guidance.value)
+if "control_checks" not in st.session_state or set(st.session_state.control_checks.keys()) != set([e.control_id for ds in matrix.domains.values() for e in ds]):
+    st.session_state.control_checks = build_empty_control_checks(matrix)
+
+for domain, expectations in matrix.domains.items():
+    st.markdown(f"### {domain.value}")
+    for exp in expectations:
+        ck = st.session_state.control_checks.get(exp.control_id)
+        if ck is None:
+            ck = ControlCheck(control_id=exp.control_id, status=ControlStatus.MISSING, evidence_attached=False)
+
+        c1, c2, c3 = st.columns([3, 2, 2])
+        with c1:
+            st.write(f"{exp.control_id}  {exp.control_description}")
+            st.write("Evidence expected: " + " | ".join(exp.expected_evidence))
+        with c2:
+            status_val = st.selectbox(
+                f"Status {exp.control_id}",
+                options=[s.value for s in ControlStatus],
+                index=[s.value for s in ControlStatus].index(ck.status.value),
+            )
+        with c3:
+            ev = st.checkbox(f"Evidence attached {exp.control_id}", value=bool(ck.evidence_attached))
+
+        st.session_state.control_checks[exp.control_id] = ControlCheck(
+            control_id=exp.control_id,
+            status=ControlStatus(status_val),
+            evidence_attached=bool(ev),
+        )
+
+st.divider()
+st.subheader("Readiness output")
+
+control_checks = dict(st.session_state.control_checks)
+summary = evaluate_decision_readiness(decision, risks, control_checks)
+
+st.write("Readiness")
+st.write(summary.readiness)
+st.write("Rationale")
 st.write(summary.rationale)
 
-st.subheader("Action guidance by risk")
+st.subheader("Prioritised gaps")
 
 rows = []
-for item in summary.items:
-    r = next((x for x in risks if x.risk_id == item.risk_id), None)
+for g in summary.gaps:
     rows.append(
         {
-            "risk_id": item.risk_id,
-            "owner": r.owner if r else "",
-            "pattern": item.pattern.value,
-            "priority": item.priority,
-            "gate_guidance": item.gate_guidance.value,
-            "recommended_actions": " | ".join(item.recommended_actions),
-            "expected_evidence": " | ".join(item.expected_evidence),
+            "priority": g.priority,
+            "domain": g.domain.value,
+            "control_id": g.control_id,
+            "minimum_required": g.minimum_required,
+            "status": g.status,
+            "evidence_attached": g.evidence_attached,
+            "linked_risks": ", ".join(g.linked_risks),
+            "expected_evidence": " | ".join(g.evidence_expected),
         }
     )
 
 st.dataframe(rows, use_container_width=True)
 
-with st.expander("Export as JSON"):
-    export_payload = {
-        "context": {
-            "activity": ctx.activity.value,
-            "stage": ctx.stage.value,
-            "industry": industry_value,
-        },
-        "risks": [
-            {
-                "risk_id": r.risk_id,
-                "description": r.description,
-                "owner": r.owner,
-                "pattern": r.pattern.value if r.pattern else None,
-                "likelihood": r.likelihood,
-                "impact": r.impact,
-                "detectability": r.detectability,
-            }
-            for r in risks
-        ],
-        "guidance": {
-            "overall_gate_guidance": summary.overall_gate_guidance.value,
-            "rationale": summary.rationale,
-            "items": [
-                {
-                    "risk_id": it.risk_id,
-                    "pattern": it.pattern.value,
-                    "priority": it.priority,
-                    "gate_guidance": it.gate_guidance.value,
-                    "why": it.why,
-                    "recommended_actions": it.recommended_actions,
-                    "expected_evidence": it.expected_evidence,
-                }
-                for it in summary.items
-            ],
-        },
-    }
-    st.json(export_payload)
+st.subheader("Domain severity focus")
+st.dataframe(
+    [{"domain": d, "max_severity_from_risks": s} for d, s in summary.prioritised_domains],
+    use_container_width=True,
+)
