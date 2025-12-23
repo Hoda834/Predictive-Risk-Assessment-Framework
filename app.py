@@ -9,7 +9,6 @@ from praf.engine.aggregator import aggregate_scores
 from praf.engine.classifier import classify_domains
 from praf.engine.rules import decide
 from praf.engine.explainability import explain
-from praf.engine.audit_trail import build_audit_trail
 from praf.config.defaults import Defaults
 
 st.set_page_config(page_title="Predictive Risk Assessment Framework", layout="wide")
@@ -75,53 +74,34 @@ def domain_label(d: RiskDomain) -> str:
     }
     return labels.get(d, d.value)
 
-def action_template(domain: RiskDomain, level: str) -> list[str]:
-    if level == "acceptable":
-        return ["Proceed with monitoring", "Record decision and rationale", "Reassess at next checkpoint"]
+def indicator_controls(indicator_id: str) -> list[str]:
+    mapping = {
+        "I001": ["Create an assumptions log", "Add design rationale note", "Schedule design review checkpoint"],
+        "I002": ["Create traceability matrix", "Link requirements to design decisions", "Record verification mapping"],
+        "I003": ["Define acceptance criteria", "Create verification checklist", "Add sign off step to design review"],
+        "I004": ["Define environmental operating range", "Plan sensitivity testing", "Add environmental controls to spec"],
+        "I005": ["Define drift indicators", "Plan stability verification", "Add recalibration trigger criteria"],
+        "I006": ["Define CTQ parameters", "Plan batch variability review", "Set sampling and inspection rules"],
+        "I007": ["Define QC thresholds", "Create QC release criteria", "Document nonconformance handling"],
+        "I008": ["Identify second source", "Create supplier risk rating", "Define contingency plan"],
+        "I009": ["Add supplier change control clause", "Define incoming inspection", "Set periodic supplier review"],
+        "I010": ["Define data capture plan", "Assign data owner", "Define data quality checks"],
+        "I011": ["Create decision log template", "Log key decisions and changes", "Define audit trail ownership"],
+        "I012": ["Define escalation thresholds", "Assign escalation owner", "Define stop revise proceed criteria"],
+    }
+    return mapping.get(indicator_id, ["Define corrective action", "Assign owner", "Reassess after completion"])
 
-    if domain == RiskDomain.REGULATORY_COMPLIANCE:
-        return [
-            "Create or update traceability matrix",
-            "Define acceptance criteria for verification checks",
-            "Schedule design review and document outputs",
-        ]
-    if domain == RiskDomain.DATA_EVIDENCE:
-        return [
-            "Define data capture plan for this stage",
-            "Assign data owner and quality checks",
-            "Create audit trail entries for decisions and changes",
-        ]
-    if domain == RiskDomain.DECISION_GOVERNANCE:
-        return [
-            "Define escalation thresholds and owners",
-            "Document stop revise proceed criteria",
-            "Log decisions and trigger re assessment after actions",
-        ]
-    if domain == RiskDomain.MANUFACTURING:
-        return [
-            "Define critical to quality parameters",
-            "Set QC thresholds for batches",
-            "Plan pilot run and variability review",
-        ]
-    if domain == RiskDomain.SUPPLY_CHAIN:
-        return [
-            "Identify second source options",
-            "Define supplier change control requirements",
-            "Create supplier qualification checklist",
-        ]
-    if domain == RiskDomain.MEASUREMENT_INTEGRITY:
-        return [
-            "Define drift and stability indicators",
-            "Map environmental sensitivity scenarios",
-            "Plan verification tests for stability conditions",
-        ]
-    if domain == RiskDomain.DESIGN_MATURITY:
-        return [
-            "Document key assumptions and rationale",
-            "Review architecture complexity and justification",
-            "Define design revision actions and re assessment criteria",
-        ]
-    return ["Define corrective actions", "Assign owner", "Reassess after completion"]
+def is_risk_active(answer_type: str, answer) -> bool:
+    if answer_type == "yes_no":
+        return str(answer).strip().lower() in {"no", "n", "false", "0"}
+    if answer_type == "low_med_high":
+        return str(answer).strip().lower() in {"medium", "high"}
+    if answer_type == "scale_1_5":
+        try:
+            return int(answer) >= 3
+        except Exception:
+            return True
+    return True
 
 with st.sidebar:
     st.header("Context")
@@ -136,10 +116,9 @@ example_payload = {}
 if example_path.exists():
     example_payload = json.loads(example_path.read_text(encoding="utf-8"))
 
-st.subheader("Optional Input JSON")
-uploaded = st.file_uploader("Upload JSON", type=["json"])
+uploaded = st.file_uploader("Upload JSON (optional)", type=["json"])
 text_payload = st.text_area(
-    "Paste JSON",
+    "Paste JSON (optional)",
     value=json.dumps(example_payload, ensure_ascii=False, indent=2) if example_payload else "",
     height=160,
 )
@@ -155,13 +134,13 @@ prefill_likelihood = dict(prefill.get("likelihood", {}))
 prefill_impact = dict(prefill.get("impact", {}))
 prefill_detectability = dict(prefill.get("detectability", {}))
 
-domain_to_indicators: dict[RiskDomain, list[str]] = {}
+domain_to_ids: dict[RiskDomain, list[str]] = {}
 for indicator_id, indicator in INDICATOR_LIBRARY.items():
     if indicator.domain in active_domains:
-        domain_to_indicators.setdefault(indicator.domain, []).append(indicator_id)
+        domain_to_ids.setdefault(indicator.domain, []).append(indicator_id)
 
 st.divider()
-st.subheader("Risk Indicator Assessment")
+st.subheader("Assessment")
 
 responses = {}
 likelihood = {}
@@ -169,7 +148,7 @@ impact = {}
 detectability = {}
 
 for d in active_domains:
-    ids = domain_to_indicators.get(d, [])
+    ids = domain_to_ids.get(d, [])
     if not ids:
         continue
 
@@ -179,8 +158,9 @@ for d in active_domains:
         indicator = INDICATOR_LIBRARY[indicator_id]
         st.markdown(f"**{indicator_id}**  {indicator.question}")
 
+        ans = None
         if indicator.answer_type.value == "yes_no":
-            default = str(prefill_responses.get(indicator_id, "yes")).lower()
+            default = str(prefill_responses.get(indicator_id, "yes")).strip().lower()
             idx = 0 if default in {"yes", "y", "true", "1"} else 1
             ans = st.radio(
                 f"{indicator_id}_response",
@@ -189,12 +169,9 @@ for d in active_domains:
                 horizontal=True,
                 label_visibility="collapsed",
             )
-            responses[indicator_id] = ans
-            risk_active = (ans == "no")
-
         elif indicator.answer_type.value == "low_med_high":
             opts = ["low", "medium", "high"]
-            default = str(prefill_responses.get(indicator_id, "medium")).lower()
+            default = str(prefill_responses.get(indicator_id, "medium")).strip().lower()
             idx = opts.index(default) if default in opts else 1
             ans = st.selectbox(
                 f"{indicator_id}_response",
@@ -202,9 +179,6 @@ for d in active_domains:
                 index=idx,
                 label_visibility="collapsed",
             )
-            responses[indicator_id] = ans
-            risk_active = (ans != "low")
-
         else:
             default_val = int(prefill_responses.get(indicator_id, 3)) if str(prefill_responses.get(indicator_id, "")).strip() else 3
             ans = st.slider(
@@ -214,10 +188,11 @@ for d in active_domains:
                 value=int(default_val),
                 label_visibility="collapsed",
             )
-            responses[indicator_id] = ans
-            risk_active = (int(ans) >= 3)
 
-        if risk_active:
+        responses[indicator_id] = ans
+        active = is_risk_active(indicator.answer_type.value, ans)
+
+        if active:
             c1, c2, c3 = st.columns(3)
             with c1:
                 likelihood[indicator_id] = st.slider(
@@ -259,41 +234,72 @@ score_result = score_indicators(
 
 aggregated = aggregate_scores(score_result.indicator_details, score_result.local_scores)
 
-classifications = classify_domains(
+raw_classifications = classify_domains(
     aggregated.domain_scores,
     low_threshold=4.0,
     high_threshold=6.0,
 )
 
-decision = decide(classifications)
-expl = explain(classifications, score_result.indicator_details, score_result.local_scores, top_n=3)
-audit = build_audit_trail(classifications, decision, score_result.indicator_details, score_result.local_scores)
+decision = decide(raw_classifications)
+expl = explain(raw_classifications, score_result.indicator_details, score_result.local_scores, top_n=3)
 
-st.subheader("Decision Summary")
+domain_scores = {d: float(aggregated.domain_scores.get(d, 0.0)) for d in active_domains}
+max_score = max(domain_scores.values()) if domain_scores else 1.0
+if max_score <= 0.0:
+    max_score = 1.0
 
-left, right = st.columns(2)
-with left:
-    st.write("Overall decision")
-    st.write(decision.overall.value)
-with right:
-    st.write("Active domains")
-    st.write([domain_label(d) for d in active_domains])
+normalised_domain_scores = {d: (domain_scores[d] / max_score) * 100.0 for d in domain_scores}
 
-st.subheader("Action Plan")
+st.subheader("Risk Register Output")
 
-plan = {}
+rows = []
 for d in active_domains:
-    if d not in classifications:
+    if d not in raw_classifications:
         continue
-    level = classifications[d].level.value
-    plan[d.value] = {
-        "level": level,
-        "score": round(float(classifications[d].score), 3),
-        "top_indicators": [x[0] for x in expl.top_contributors_by_domain.get(d, [])],
-        "required_actions": action_template(d, level),
-    }
+    level = raw_classifications[d].level.value
+    top_ids = [x[0] for x in expl.top_contributors_by_domain.get(d, [])]
+    rows.append(
+        {
+            "Domain": domain_label(d),
+            "Level": level,
+            "Score_0_100": round(float(normalised_domain_scores.get(d, 0.0)), 1),
+            "Top_indicators": ", ".join(top_ids),
+        }
+    )
 
-st.json(plan)
+st.dataframe(rows, use_container_width=True)
 
-with st.expander("Full audit and raw details"):
-    st.json([{"key": a.key, "value": a.value} for a in audit])
+st.subheader("Controls and Evidence")
+
+control_rows = []
+for d in active_domains:
+    top_ids = [x[0] for x in expl.top_contributors_by_domain.get(d, [])]
+    for iid in top_ids:
+        indicator = INDICATOR_LIBRARY[iid]
+        active = is_risk_active(indicator.answer_type.value, responses.get(iid))
+        if not active:
+            continue
+        actions = indicator_controls(iid)
+        control_rows.append(
+            {
+                "Indicator": iid,
+                "Domain": domain_label(d),
+                "Required_controls": " | ".join(actions),
+                "Evidence_expected": "Updated artefact and audit log entry",
+            }
+        )
+
+if control_rows:
+    st.dataframe(control_rows, use_container_width=True)
+else:
+    st.write("No active risks identified based on current responses.")
+
+with st.expander("Debug details"):
+    st.json(
+        {
+            "context": {"activity": ctx.activity.value, "stage": ctx.stage.value},
+            "overall_decision": decision.overall.value,
+            "domain_scores_raw": {k.value: v for k, v in domain_scores.items()},
+            "domain_scores_0_100": {k.value: round(v, 2) for k, v in normalised_domain_scores.items()},
+        }
+    )
