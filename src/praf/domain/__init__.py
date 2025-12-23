@@ -4,6 +4,8 @@ from .natures import RiskNature, nature_weight_modifier
 from .categories import RiskCategory, DOMAIN_TO_CATEGORIES
 from .indicators import Indicator, INDICATOR_LIBRARY
 from .risk_patterns import RiskPattern, UserRisk, suggest_pattern_from_text
+from .decision_matrix import DecisionScenario, ControlDomain, ControlExpectation, DecisionMatrix, get_matrix
+from .user_risk import UserRisk
 
 
 __all__ = [
