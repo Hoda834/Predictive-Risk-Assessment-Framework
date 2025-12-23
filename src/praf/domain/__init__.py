@@ -3,6 +3,8 @@ from .domains import RiskDomain, activity_domain_weights
 from .natures import RiskNature, nature_weight_modifier
 from .categories import RiskCategory, DOMAIN_TO_CATEGORIES
 from .indicators import Indicator, INDICATOR_LIBRARY
+from .risk_patterns import RiskPattern, UserRisk, suggest_pattern_from_text
+
 
 __all__ = [
     "Activity",
@@ -16,4 +18,8 @@ __all__ = [
     "DOMAIN_TO_CATEGORIES",
     "Indicator",
     "INDICATOR_LIBRARY",
+    "RiskPattern",
+    "UserRisk",
+    "suggest_pattern_from_text",
+
 ]
