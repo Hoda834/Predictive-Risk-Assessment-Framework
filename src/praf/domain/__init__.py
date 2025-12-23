@@ -23,5 +23,12 @@ __all__ = [
     "RiskPattern",
     "UserRisk",
     "suggest_pattern_from_text",
+    "DecisionScenario",
+    "ControlDomain",
+    "ControlExpectation",
+    "DecisionMatrix",
+    "get_matrix",
+    "UserRisk",
+
 
 ]
