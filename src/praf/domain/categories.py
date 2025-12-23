@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict, tuple
+from typing import Dict, Tuple
 
 from .domains import RiskDomain
 
@@ -23,7 +23,7 @@ class RiskCategory(str, Enum):
     ESCALATION_GAPS = "escalation_gaps"
 
 
-DOMAIN_TO_CATEGORIES: Dict[RiskDomain, tuple[RiskCategory, ...]] = {
+DOMAIN_TO_CATEGORIES: Dict[RiskDomain, Tuple[RiskCategory, ...]] = {
     RiskDomain.DESIGN_MATURITY: (
         RiskCategory.UNVALIDATED_ASSUMPTIONS,
         RiskCategory.RATIONALE_GAPS,
