@@ -1,0 +1,16 @@
+{
+  "decision_id": "approve_supplier_onboarding",
+  "title": "Approve supplier onboarding",
+  "required_controls": ["5.19", "5.20", "5.22", "8.9", "8.13"],
+  "optional_controls": ["5.21", "5.23", "5.29", "5.30"],
+  "evidence_expectations": {
+    "5.19": ["Supplier qualification checklist", "Supplier assessment record"],
+    "5.20": ["Supplier agreement clause", "Change notification rule"],
+    "5.22": ["Supplier review cadence", "Change management note"],
+    "8.9": ["Configuration baseline", "Configuration change record"],
+    "8.13": ["Backup procedure", "Backup test evidence"]
+  },
+  "readiness_rules": {
+    "not_ready_if_missing_any_required_control": true
+  }
+}
