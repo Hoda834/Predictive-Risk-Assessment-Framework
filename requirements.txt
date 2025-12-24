@@ -1,3 +1,4 @@
+reportlab
 streamlit==1.36.0
 setuptools>=68
 -e .
