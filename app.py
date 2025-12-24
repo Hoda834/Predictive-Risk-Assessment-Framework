@@ -1,174 +1,147 @@
-import json
-from praf.asset_risk import load_decision_matrix, evaluate_readiness
 import uuid
-from pathlib import Path
 import streamlit as st
 
-from praf.domain import Activity, ProjectStage, Context
-from praf.domain.risk_patterns import RiskPattern, UserRisk, suggest_pattern_from_text
-from praf.engine.guidance import generate_guidance
+from praf.asset_risk import (
+    Asset,
+    Risk,
+    calculate_score,
+    suggest_treatment,
+    load_control_catalogue,
+    load_decision_matrix,
+    evaluate_readiness,
+)
 
 st.set_page_config(page_title="Predictive Risk Assessment Framework", layout="wide")
 st.title("Predictive Risk Assessment Framework")
 
+CONTROL_CATALOGUE_PATH = "data/control_catalogue.csv"
+DECISION_MATRIX_PATH = "data/decision_matrices/approve_supplier_onboarding.json"
+
+controls = load_control_catalogue(CONTROL_CATALOGUE_PATH)
+control_ids = [c["id"] for c in controls]
+
+if "assets" not in st.session_state:
+    st.session_state.assets = []
+
 if "risks" not in st.session_state:
     st.session_state.risks = []
 
-with st.sidebar:
-    st.header("Context")
-    activity_value = st.selectbox("Activity", options=[a.value for a in Activity], index=0)
-    stage_value = st.selectbox("Stage", options=[s.value for s in ProjectStage], index=1)
+page = st.sidebar.radio(
+    "Section",
+    options=["Assets", "Risks", "Outputs"],
+    index=0,
+)
 
-    st.header("Optional industry")
-    industry_value = st.selectbox(
-        "Industry",
-        options=["generic", "medtech", "saas", "manufacturing", "finance", "other"],
-        index=0,
-    )
+# ---------------- ASSETS ----------------
+if page == "Assets":
+    st.subheader("Asset inventory")
 
-ctx = Context(activity=Activity(activity_value), stage=ProjectStage(stage_value))
+    with st.form("add_asset", clear_on_submit=True):
+        name = st.text_input("Asset name")
+        description = st.text_area("Description", height=80)
+        owner = st.text_input("Owner")
+        category = st.text_input("Category")
+        cia = st.multiselect("CIA relevance", ["C", "I", "A"])
+        personal_data = st.checkbox("Contains personal data")
+        access = st.text_input("Who should have access")
+        submit = st.form_submit_button("Add asset")
 
-st.subheader("Add risks")
-st.write("Write risks freely. You will be required to map each risk to a pattern before guidance is generated.")
-
-with st.form("add_risk_form", clear_on_submit=True):
-    description = st.text_area("Risk description", height=90)
-    owner = st.text_input("Owner", value="")
-    submitted = st.form_submit_button("Add risk")
-
-if submitted and description.strip():
-    rid = str(uuid.uuid4())[:8]
-    suggestion = suggest_pattern_from_text(description)
-    st.session_state.risks.append(
-        {
-            "risk_id": rid,
-            "description": description.strip(),
-            "owner": owner.strip(),
-            "suggested_pattern": suggestion.value,
-            "pattern": None,
-            "likelihood": 3,
-            "impact": 3,
-            "detectability": 3,
-        }
-    )
-
-if not st.session_state.risks:
-    st.stop()
-
-st.divider()
-st.subheader("Map risks to patterns")
-
-pattern_options = [p.value for p in RiskPattern]
-
-for idx, r in enumerate(st.session_state.risks):
-    st.markdown(f"### Risk {idx + 1}: {r['risk_id']}")
-    st.write(r["description"])
-
-    c1, c2 = st.columns(2)
-    with c1:
-        st.write("Suggested pattern")
-        st.write(r["suggested_pattern"])
-    with c2:
-        selected = st.selectbox(
-            f"Pattern mapping {r['risk_id']}",
-            options=pattern_options,
-            index=pattern_options.index(r["suggested_pattern"]) if r["suggested_pattern"] in pattern_options else 0,
+    if submit and name.strip():
+        st.session_state.assets.append(
+            Asset(
+                asset_id=len(st.session_state.assets) + 1,
+                name=name.strip(),
+                description=description.strip(),
+                owner=owner.strip(),
+                category=category.strip(),
+                cia=cia,
+                personal_data=personal_data,
+                access=access.strip(),
+            )
         )
-        r["pattern"] = selected
 
-    c3, c4, c5 = st.columns(3)
-    with c3:
-        r["likelihood"] = st.slider(f"Likelihood {r['risk_id']}", 1, 5, int(r["likelihood"]))
-    with c4:
-        r["impact"] = st.slider(f"Impact {r['risk_id']}", 1, 5, int(r["impact"]))
-    with c5:
-        r["detectability"] = st.slider(f"Detectability {r['risk_id']}", 1, 5, int(r["detectability"]))
-
-    remove = st.button(f"Remove {r['risk_id']}")
-    if remove:
-        st.session_state.risks.pop(idx)
-        st.rerun()
-
-st.divider()
-
-unmapped = [r for r in st.session_state.risks if not r.get("pattern")]
-if unmapped:
-    st.error("All risks must be mapped to a pattern before guidance can be generated.")
-    st.stop()
-
-risks = []
-for r in st.session_state.risks:
-    risks.append(
-        UserRisk(
-            risk_id=r["risk_id"],
-            description=r["description"],
-            owner=r.get("owner", ""),
-            likelihood=int(r["likelihood"]),
-            impact=int(r["impact"]),
-            detectability=int(r["detectability"]),
-            pattern=RiskPattern(r["pattern"]),
+    if st.session_state.assets:
+        st.dataframe(
+            [a.__dict__ for a in st.session_state.assets],
+            use_container_width=True,
         )
-    )
 
-summary = generate_guidance(ctx, risks)
+# ---------------- RISKS ----------------
+if page == "Risks":
+    if not st.session_state.assets:
+        st.error("Add at least one asset first.")
+        st.stop()
 
-st.subheader("Decision gate guidance")
-st.write(summary.overall_gate_guidance.value)
-st.write(summary.rationale)
+    st.subheader("Risks on assets")
 
-st.subheader("Action guidance by risk")
+    asset_map = {a.asset_id: a for a in st.session_state.assets}
+    asset_id = st.selectbox("Select asset", options=list(asset_map.keys()))
 
-rows = []
-for item in summary.items:
-    r = next((x for x in risks if x.risk_id == item.risk_id), None)
-    rows.append(
-        {
-            "risk_id": item.risk_id,
-            "owner": r.owner if r else "",
-            "pattern": item.pattern.value,
-            "priority": item.priority,
-            "gate_guidance": item.gate_guidance.value,
-            "recommended_actions": " | ".join(item.recommended_actions),
-            "expected_evidence": " | ".join(item.expected_evidence),
-        }
-    )
+    with st.form("add_risk", clear_on_submit=True):
+        event = st.text_area("Risk event", height=80)
+        source = st.text_input("Source / cause")
+        cia = st.multiselect("CIA affected", ["C", "I", "A"])
+        likelihood = st.selectbox("Likelihood", ["Low", "Medium", "High"], index=1)
+        impact = st.selectbox("Impact", ["Low", "Medium", "High"], index=1)
+        selected_controls = st.multiselect("Applicable controls", control_ids)
+        residual_likelihood = st.selectbox("Residual likelihood", ["Low", "Medium", "High"], index=1)
+        residual_impact = st.selectbox("Residual impact", ["Low", "Medium", "High"], index=1)
+        submit = st.form_submit_button("Add risk")
 
-st.dataframe(rows, use_container_width=True)
+    if submit and event.strip():
+        score = calculate_score(likelihood, impact)
+        treatment = suggest_treatment(score)
+        residual_score = calculate_score(residual_likelihood, residual_impact)
 
-with st.expander("Export as JSON"):
-    export_payload = {
-        "context": {
-            "activity": ctx.activity.value,
-            "stage": ctx.stage.value,
-            "industry": industry_value,
-        },
-        "risks": [
-            {
-                "risk_id": r.risk_id,
-                "description": r.description,
-                "owner": r.owner,
-                "pattern": r.pattern.value if r.pattern else None,
-                "likelihood": r.likelihood,
-                "impact": r.impact,
-                "detectability": r.detectability,
-            }
-            for r in risks
-        ],
-        "guidance": {
-            "overall_gate_guidance": summary.overall_gate_guidance.value,
-            "rationale": summary.rationale,
-            "items": [
-                {
-                    "risk_id": it.risk_id,
-                    "pattern": it.pattern.value,
-                    "priority": it.priority,
-                    "gate_guidance": it.gate_guidance.value,
-                    "why": it.why,
-                    "recommended_actions": it.recommended_actions,
-                    "expected_evidence": it.expected_evidence,
-                }
-                for it in summary.items
-            ],
-        },
-    }
-    st.json(export_payload)
+        st.session_state.risks.append(
+            Risk(
+                risk_id=str(uuid.uuid4())[:8],
+                asset_id=asset_id,
+                event=event.strip(),
+                source=source.strip(),
+                cia=cia,
+                likelihood=likelihood,
+                impact=impact,
+                score=score,
+                suggested_treatment=treatment,
+                selected_controls=selected_controls,
+                residual_likelihood=residual_likelihood,
+                residual_impact=residual_impact,
+                residual_score=residual_score,
+            )
+        )
+
+    if st.session_state.risks:
+        st.dataframe(
+            [r.__dict__ for r in st.session_state.risks],
+            use_container_width=True,
+        )
+
+# ---------------- OUTPUTS ----------------
+if page == "Outputs":
+    st.subheader("Decision readiness")
+
+    if not st.session_state.risks:
+        st.error("No risks defined.")
+        st.stop()
+
+    decision_matrix = load_decision_matrix(DECISION_MATRIX_PATH)
+    result = evaluate_readiness(decision_matrix, st.session_state.risks)
+
+    status = result["readiness"]
+
+    if status == "ready":
+        st.success("Decision status: READY")
+    elif status == "conditionally_ready":
+        st.warning("Decision status: CONDITIONALLY READY")
+    else:
+        st.error("Decision status: NOT READY")
+
+    st.markdown("### Missing required controls")
+    st.write(result["missing_required_controls"])
+
+    st.markdown("### High residual risks")
+    st.write(result["high_residual_risk_count"])
+
+    st.markdown("### Reasons")
+    st.write(result["reasons"])
