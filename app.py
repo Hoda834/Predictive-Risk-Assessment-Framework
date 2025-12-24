@@ -9,16 +9,20 @@ from praf.asset_risk import (
     load_control_catalogue,
     load_decision_matrix,
     evaluate_readiness,
+    assets_to_df,
+    risks_to_df,
+    control_coverage_df,
 )
+from praf.engine.pdf_export import build_pdf_report
 
-st.set_page_config(page_title="Predictive Risk Assessment Framework", layout="wide")
-st.title("Predictive Risk Assessment Framework")
+st.set_page_config(page_title="Asset Risk Control Planner", layout="wide")
+st.title("Asset Risk Control Planner")
 
 CONTROL_CATALOGUE_PATH = "data/control_catalogue.csv"
 DECISION_MATRIX_PATH = "data/decision_matrices/approve_supplier_onboarding.json"
 
-controls = load_control_catalogue(CONTROL_CATALOGUE_PATH)
-control_ids = [c["id"] for c in controls]
+catalogue = load_control_catalogue(CONTROL_CATALOGUE_PATH)
+control_ids = [c["id"] for c in catalogue]
 
 if "assets" not in st.session_state:
     st.session_state.assets = []
@@ -26,13 +30,8 @@ if "assets" not in st.session_state:
 if "risks" not in st.session_state:
     st.session_state.risks = []
 
-page = st.sidebar.radio(
-    "Section",
-    options=["Assets", "Risks", "Outputs"],
-    index=0,
-)
+page = st.sidebar.radio("Section", options=["Assets", "Risks", "Outputs"], index=0)
 
-# ---------------- ASSETS ----------------
 if page == "Assets":
     st.subheader("Asset inventory")
 
@@ -55,93 +54,127 @@ if page == "Assets":
                 owner=owner.strip(),
                 category=category.strip(),
                 cia=cia,
-                personal_data=personal_data,
+                personal_data=bool(personal_data),
                 access=access.strip(),
             )
         )
 
     if st.session_state.assets:
-        st.dataframe(
-            [a.__dict__ for a in st.session_state.assets],
-            use_container_width=True,
-        )
+        st.dataframe(assets_to_df(st.session_state.assets), use_container_width=True)
 
-# ---------------- RISKS ----------------
 if page == "Risks":
     if not st.session_state.assets:
         st.error("Add at least one asset first.")
         st.stop()
 
-    st.subheader("Risks on assets")
+    assets_by_id = {a.asset_id: a for a in st.session_state.assets}
+    asset_id = st.selectbox("Select asset", options=list(assets_by_id.keys()))
+    st.write(f"Selected asset: {assets_by_id[int(asset_id)].name}")
 
-    asset_map = {a.asset_id: a for a in st.session_state.assets}
-    asset_id = st.selectbox("Select asset", options=list(asset_map.keys()))
+    prob_opts = ["Low", "Medium", "High"]
 
     with st.form("add_risk", clear_on_submit=True):
-        event = st.text_area("Risk event", height=80)
+        title = st.text_input("Risk title")
+        description = st.text_area("Risk description", height=90)
+        owner = st.text_input("Risk owner")
         source = st.text_input("Source / cause")
         cia = st.multiselect("CIA affected", ["C", "I", "A"])
-        likelihood = st.selectbox("Likelihood", ["Low", "Medium", "High"], index=1)
-        impact = st.selectbox("Impact", ["Low", "Medium", "High"], index=1)
-        selected_controls = st.multiselect("Applicable controls", control_ids)
-        residual_likelihood = st.selectbox("Residual likelihood", ["Low", "Medium", "High"], index=1)
-        residual_impact = st.selectbox("Residual impact", ["Low", "Medium", "High"], index=1)
+        likelihood = st.selectbox("Likelihood", prob_opts, index=1)
+        impact = st.selectbox("Impact", prob_opts, index=1)
+        selected_controls = st.multiselect("Applicable controls", options=control_ids)
+        residual_likelihood = st.selectbox("Residual likelihood", prob_opts, index=1)
+        residual_impact = st.selectbox("Residual impact", prob_opts, index=1)
         submit = st.form_submit_button("Add risk")
 
-    if submit and event.strip():
-        score = calculate_score(likelihood, impact)
-        treatment = suggest_treatment(score)
-        residual_score = calculate_score(residual_likelihood, residual_impact)
+    if submit and (title.strip() or description.strip()):
+        l = likelihood
+        i = impact
+        score = calculate_score(l, i)
+        treatment = suggest_treatment(score, threshold=4)
+        rl = residual_likelihood
+        ri = residual_impact
+        residual_score = calculate_score(rl, ri)
 
         st.session_state.risks.append(
             Risk(
                 risk_id=str(uuid.uuid4())[:8],
-                asset_id=asset_id,
-                event=event.strip(),
+                asset_id=int(asset_id),
+                title=title.strip() if title.strip() else description.strip()[:60],
+                description=description.strip(),
+                owner=owner.strip(),
                 source=source.strip(),
                 cia=cia,
-                likelihood=likelihood,
-                impact=impact,
-                score=score,
+                likelihood=l,
+                impact=i,
+                score=int(score),
                 suggested_treatment=treatment,
-                selected_controls=selected_controls,
-                residual_likelihood=residual_likelihood,
-                residual_impact=residual_impact,
-                residual_score=residual_score,
+                selected_controls=list(selected_controls),
+                residual_likelihood=rl,
+                residual_impact=ri,
+                residual_score=int(residual_score),
             )
         )
 
     if st.session_state.risks:
-        st.dataframe(
-            [r.__dict__ for r in st.session_state.risks],
-            use_container_width=True,
-        )
+        df = risks_to_df(st.session_state.risks, assets_by_id)
+        st.dataframe(df, use_container_width=True)
 
-# ---------------- OUTPUTS ----------------
 if page == "Outputs":
-    st.subheader("Decision readiness")
-
     if not st.session_state.risks:
         st.error("No risks defined.")
         st.stop()
 
+    assets_by_id = {a.asset_id: a for a in st.session_state.assets}
     decision_matrix = load_decision_matrix(DECISION_MATRIX_PATH)
-    result = evaluate_readiness(decision_matrix, st.session_state.risks)
+    readiness = evaluate_readiness(decision_matrix, st.session_state.risks)
 
-    status = result["readiness"]
+    st.subheader("Decision readiness")
+    status = readiness["readiness"]
 
     if status == "ready":
-        st.success("Decision status: READY")
+        st.success("READY")
     elif status == "conditionally_ready":
-        st.warning("Decision status: CONDITIONALLY READY")
+        st.warning("CONDITIONALLY READY")
     else:
-        st.error("Decision status: NOT READY")
+        st.error("NOT READY")
 
-    st.markdown("### Missing required controls")
-    st.write(result["missing_required_controls"])
+    st.write("Reasons")
+    st.write(readiness["reasons"])
 
-    st.markdown("### High residual risks")
-    st.write(result["high_residual_risk_count"])
+    st.write("Missing required controls")
+    st.write(readiness["missing_required_controls"])
 
-    st.markdown("### Reasons")
-    st.write(result["reasons"])
+    st.write("High residual risks")
+    st.write(
+        {
+            "count": readiness["high_residual_risk_count"],
+            "threshold": readiness["high_residual_threshold"],
+            "max_allowed": readiness["max_allowed_high_residual_risks"],
+        }
+    )
+
+    st.subheader("Risk register ranked")
+    risk_df = risks_to_df(st.session_state.risks, assets_by_id)
+    st.dataframe(risk_df, use_container_width=True)
+
+    st.subheader("Control coverage matrix")
+    control_df = control_coverage_df(st.session_state.risks, catalogue)
+    st.dataframe(control_df, use_container_width=True)
+
+    pdf_bytes = build_pdf_report(
+        context={"decision_title": decision_matrix.get("title", ""), "scope": "generic"},
+        readiness={
+            "readiness": readiness["readiness"],
+            "reasons": readiness["reasons"],
+            "missing_required_controls": readiness["missing_required_controls"],
+        },
+        risk_df=risk_df,
+        control_df=control_df,
+    )
+
+    st.download_button(
+        "Download PDF report",
+        data=pdf_bytes,
+        file_name="decision_readiness_report.pdf",
+        mime="application/pdf",
+    )
