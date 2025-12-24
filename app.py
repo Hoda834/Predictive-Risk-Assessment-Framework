@@ -3,30 +3,32 @@ from __future__ import annotations
 import json
 import time
 import uuid
-from typing import Any, Dict, List, Tuple
+import sys
+from pathlib import Path
+from typing import Any, Dict, List
 
 import streamlit as st
 
-from praf.asset_risk import (
-    Asset,
-    Risk,
-    calculate_score,
-    suggest_treatment,
-    load_control_catalogue,
-    load_decision_matrix,
-    evaluate_readiness,
-    assets_to_df,
-    risks_to_df,
-    control_coverage_df,
-)
+# Ensure src/ is importable on Streamlit Cloud even if the package is not installed
+REPO_ROOT = Path(__file__).resolve().parent
+SRC_PATH = REPO_ROOT / "src"
+if str(SRC_PATH) not in sys.path:
+    sys.path.insert(0, str(SRC_PATH))
+
+# Import from actual modules (your repo structure)
+from praf.asset_risk.models import Asset, Risk
+from praf.asset_risk.scoring import calculate_score, suggest_treatment
+from praf.asset_risk.catalogue import load_control_catalogue
+from praf.asset_risk.decision_matrix import load_decision_matrix
+from praf.asset_risk.readiness import evaluate_readiness
+from praf.asset_risk.outputs import assets_to_df, risks_to_df, control_coverage_df
+
 from praf.engine.pdf_export import build_pdf_report
 
 
 APP_TITLE = "Predictive Risk Assessment Framework"
 CONTROL_CATALOGUE_PATH = "data/control_catalogue.csv"
 DECISION_MATRIX_PATH = "data/decision_matrices/approve_supplier_onboarding.json"
-
-
 PROB_OPTS = ["Low", "Medium", "High"]
 
 
@@ -52,7 +54,22 @@ def _hide_risk_id_column(df):
     return df
 
 
-def _build_required_controls_table(
+def _catalogue_label_map(catalogue: List[Dict[str, Any]]) -> Dict[str, str]:
+    label_map: Dict[str, str] = {}
+    for c in catalogue:
+        cid = str(c.get("id", "")).strip()
+        if not cid:
+            continue
+        name = ""
+        for k in ["name", "title", "control", "description"]:
+            if k in c and str(c.get(k)).strip():
+                name = str(c.get(k)).strip()
+                break
+        label_map[cid] = f"{cid} | {name}" if name else cid
+    return label_map
+
+
+def _build_controls_table(
     decision_matrix: Dict[str, Any],
     readiness: Dict[str, Any],
     catalogue: List[Dict[str, Any]],
@@ -60,25 +77,17 @@ def _build_required_controls_table(
     required_controls = _coerce_list(decision_matrix.get("required_controls"))
     optional_controls = _coerce_list(decision_matrix.get("optional_controls"))
     evidence_expectations = decision_matrix.get("evidence_expectations", {}) or {}
-    missing_required_controls = set(_coerce_list(readiness.get("missing_required_controls")))
+    missing_required = set(_coerce_list(readiness.get("missing_required_controls")))
+    label_map = _catalogue_label_map(catalogue)
 
-    catalogue_by_id: Dict[str, Dict[str, Any]] = {str(c.get("id")): c for c in catalogue}
     rows: List[Dict[str, Any]] = []
-
-    def control_name(control_id: str) -> str:
-        c = catalogue_by_id.get(str(control_id), {})
-        for k in ["name", "title", "control", "description"]:
-            if k in c and str(c.get(k)).strip():
-                return str(c.get(k)).strip()
-        return ""
 
     for cid in required_controls:
         rows.append(
             {
-                "Control": str(cid),
-                "Control name": control_name(str(cid)),
+                "Control": label_map.get(str(cid), str(cid)),
                 "Type": "Required",
-                "Status": "Missing" if str(cid) in missing_required_controls else "Covered",
+                "Status": "Missing" if str(cid) in missing_required else "Covered",
                 "Evidence expected": "; ".join(_coerce_list(evidence_expectations.get(str(cid)))) if evidence_expectations else "",
             }
         )
@@ -86,8 +95,7 @@ def _build_required_controls_table(
     for cid in optional_controls:
         rows.append(
             {
-                "Control": str(cid),
-                "Control name": control_name(str(cid)),
+                "Control": label_map.get(str(cid), str(cid)),
                 "Type": "Optional",
                 "Status": "Optional",
                 "Evidence expected": "; ".join(_coerce_list(evidence_expectations.get(str(cid)))) if evidence_expectations else "",
@@ -97,21 +105,18 @@ def _build_required_controls_table(
     return rows
 
 
-def _build_action_plan(
-    decision_matrix: Dict[str, Any],
-    readiness: Dict[str, Any],
-    risks: List[Risk],
-) -> Dict[str, Any]:
+def _build_action_plan(decision_matrix: Dict[str, Any], readiness: Dict[str, Any]) -> List[Dict[str, Any]]:
     missing_required_controls = _coerce_list(readiness.get("missing_required_controls"))
     evidence_expectations = decision_matrix.get("evidence_expectations", {}) or {}
 
     actions: List[Dict[str, Any]] = []
+
     for cid in missing_required_controls:
         actions.append(
             {
                 "Priority": 1,
                 "Action": f"Implement required control {cid}",
-                "Deliverables": "; ".join(_coerce_list(evidence_expectations.get(str(cid)))) if evidence_expectations else "Define evidence and implementation record",
+                "Deliverables": "; ".join(_coerce_list(evidence_expectations.get(str(cid)))) if evidence_expectations else "Define implementation evidence",
                 "Owner": "TBC",
                 "Target date": "TBC",
             }
@@ -119,13 +124,14 @@ def _build_action_plan(
 
     high_residual_threshold = int(readiness.get("high_residual_threshold", 0))
     high_residual_count = int(readiness.get("high_residual_risk_count", 0))
+    max_allowed = int(readiness.get("max_allowed_high_residual_risks", 0))
 
-    if high_residual_count > 0:
+    if high_residual_count > max_allowed:
         actions.append(
             {
                 "Priority": 2,
-                "Action": f"Reduce high residual risks (threshold {high_residual_threshold})",
-                "Deliverables": "Residual risk mitigation plan; updated residual scoring; evidence of implemented treatments",
+                "Action": f"Reduce residual risks above threshold {high_residual_threshold}",
+                "Deliverables": "Mitigation plan; updated residual scoring; evidence of implemented treatments",
                 "Owner": "TBC",
                 "Target date": "TBC",
             }
@@ -135,88 +141,19 @@ def _build_action_plan(
         actions.append(
             {
                 "Priority": 1,
-                "Action": "Maintain readiness controls and monitoring cadence",
+                "Action": "Maintain readiness through monitoring and periodic review",
                 "Deliverables": "Monitoring logs; periodic reviews; evidence retention",
                 "Owner": "TBC",
                 "Target date": "TBC",
             }
         )
 
-    return {
-        "missing_required_controls": missing_required_controls,
-        "high_residual_threshold": high_residual_threshold,
-        "high_residual_count": high_residual_count,
-        "actions": actions,
-    }
-
-
-def _build_audit_bundle(
-    decision_matrix: Dict[str, Any],
-    readiness: Dict[str, Any],
-    risks: List[Risk],
-) -> Dict[str, Any]:
-    required_controls = _coerce_list(decision_matrix.get("required_controls"))
-    rules = decision_matrix.get("readiness_rules", {}) or {}
-
-    triggered: List[Dict[str, Any]] = []
-
-    if rules.get("not_ready_if_missing_any_required_control", False):
-        missing = _coerce_list(readiness.get("missing_required_controls"))
-        if missing:
-            triggered.append(
-                {
-                    "rule": "not_ready_if_missing_any_required_control",
-                    "result": "Triggered",
-                    "details": {"missing_required_controls": missing},
-                }
-            )
-        else:
-            triggered.append(
-                {
-                    "rule": "not_ready_if_missing_any_required_control",
-                    "result": "Not triggered",
-                    "details": {"missing_required_controls": []},
-                }
-            )
-
-    max_allowed = int(rules.get("max_allowed_high_residual_risks", 0))
-    high_count = int(readiness.get("high_residual_risk_count", 0))
-    thr = int(readiness.get("high_residual_threshold", 0))
-
-    triggered.append(
-        {
-            "rule": "max_allowed_high_residual_risks",
-            "result": "Triggered" if high_count > max_allowed else "Not triggered",
-            "details": {
-                "count": high_count,
-                "threshold": thr,
-                "max_allowed": max_allowed,
-            },
-        }
-    )
-
-    risk_scoring_note = {
-        "initial_score": "Derived from Likelihood x Impact mapping (see calculate_score).",
-        "residual_score": "Derived from Residual Likelihood x Residual Impact mapping (see calculate_score).",
-        "treatment_suggestion": "Derived from score threshold logic (see suggest_treatment).",
-    }
-
-    return {
-        "generated_at_utc": _now_utc_iso(),
-        "decision_id": decision_matrix.get("decision_id"),
-        "decision_title": decision_matrix.get("title"),
-        "required_controls": required_controls,
-        "triggered_rules": triggered,
-        "readiness_status": readiness.get("readiness"),
-        "readiness_reasons": readiness.get("reasons"),
-        "risk_scoring_explainability": risk_scoring_note,
-        "risk_count": len(risks),
-    }
+    return actions
 
 
 def main() -> None:
     st.set_page_config(page_title=APP_TITLE, layout="wide")
-    st.title("Predictive Risk Assessment Framework")
+    st.title(APP_TITLE)
 
     try:
         catalogue = load_control_catalogue(CONTROL_CATALOGUE_PATH)
@@ -224,13 +161,14 @@ def main() -> None:
         st.error(f"Could not load control catalogue from {CONTROL_CATALOGUE_PATH}. Error: {e}")
         st.stop()
 
-    control_ids = [str(c.get("id")) for c in catalogue if str(c.get("id", "")).strip()]
-
     try:
         decision_matrix = load_decision_matrix(DECISION_MATRIX_PATH)
     except Exception as e:
         st.error(f"Could not load decision matrix from {DECISION_MATRIX_PATH}. Error: {e}")
         st.stop()
+
+    control_ids = [str(c.get("id")) for c in catalogue if str(c.get("id", "")).strip()]
+    label_map = _catalogue_label_map(catalogue)
 
     if "assets" not in st.session_state:
         st.session_state.assets = []
@@ -310,12 +248,18 @@ def main() -> None:
             with st.form("add_risk", clear_on_submit=True):
                 title = st.text_input("Risk title")
                 description = st.text_area("Risk description", height=90)
-                owner = st.text_input("Risk owner")
+                risk_owner = st.text_input("Risk owner")
                 source = st.text_input("Source / cause")
                 cia_aff = st.multiselect("CIA affected", ["C", "I", "A"])
                 likelihood = st.selectbox("Likelihood", PROB_OPTS, index=1)
                 impact = st.selectbox("Impact", PROB_OPTS, index=1)
-                selected_controls = st.multiselect("Applicable controls", options=control_ids)
+
+                selected_controls_ui = st.multiselect(
+                    "Applicable controls",
+                    options=control_ids,
+                    format_func=lambda x: label_map.get(str(x), str(x)),
+                )
+
                 residual_likelihood = st.selectbox("Residual likelihood", PROB_OPTS, index=1)
                 residual_impact = st.selectbox("Residual impact", PROB_OPTS, index=1)
                 submit_risk = st.form_submit_button("Add risk")
@@ -331,14 +275,14 @@ def main() -> None:
                         asset_id=int(asset_id),
                         title=title.strip() if title.strip() else description.strip()[:60],
                         description=description.strip(),
-                        owner=owner.strip(),
+                        owner=risk_owner.strip(),
                         source=source.strip(),
                         cia=cia_aff,
                         likelihood=likelihood,
                         impact=impact,
                         score=score,
                         suggested_treatment=treatment,
-                        selected_controls=list(selected_controls),
+                        selected_controls=list(selected_controls_ui),
                         residual_likelihood=residual_likelihood,
                         residual_impact=residual_impact,
                         residual_score=residual_score,
@@ -392,14 +336,13 @@ def main() -> None:
             readiness = evaluate_readiness(decision_matrix, st.session_state.risks)
 
             st.write("Required and optional controls")
-            controls_rows = _build_required_controls_table(decision_matrix, readiness, catalogue)
+            controls_rows = _build_controls_table(decision_matrix, readiness, catalogue)
             st.dataframe(controls_rows, use_container_width=True)
-
-            plan = _build_action_plan(decision_matrix, readiness, st.session_state.risks)
 
             st.divider()
             st.write("Prioritised actions to become READY")
-            st.dataframe(plan["actions"], use_container_width=True)
+            actions = _build_action_plan(decision_matrix, readiness)
+            st.dataframe(actions, use_container_width=True)
 
             st.divider()
             st.write("Control coverage matrix")
@@ -421,25 +364,30 @@ def main() -> None:
         else:
             readiness = evaluate_readiness(decision_matrix, st.session_state.risks)
 
-            audit_bundle = _build_audit_bundle(decision_matrix, readiness, st.session_state.risks)
-
-            st.write("Triggered rules and rationale")
-            st.json(audit_bundle["triggered_rules"])
-
-            st.write("Scoring explainability (how the numbers were derived)")
-            st.json(audit_bundle["risk_scoring_explainability"])
-
-            st.write("Decision readiness evidence")
-            st.json(
-                {
+            rules = (decision_matrix.get("readiness_rules", {}) or {})
+            audit_bundle = {
+                "generated_at_utc": _now_utc_iso(),
+                "decision": {
+                    "decision_id": decision_matrix.get("decision_id"),
+                    "title": decision_matrix.get("title"),
+                },
+                "rules": rules,
+                "readiness": {
                     "status": readiness.get("readiness"),
                     "reasons": readiness.get("reasons", []),
                     "missing_required_controls": readiness.get("missing_required_controls", []),
                     "high_residual_risk_count": readiness.get("high_residual_risk_count"),
                     "high_residual_threshold": readiness.get("high_residual_threshold"),
                     "max_allowed_high_residual_risks": readiness.get("max_allowed_high_residual_risks"),
-                }
-            )
+                },
+                "notes": {
+                    "scoring": "Initial score and residual score are derived from Likelihood and Impact mappings (see asset_risk/scoring.py).",
+                    "readiness": "Readiness is derived by applying decision_matrix required controls and residual risk constraints (see asset_risk/readiness.py).",
+                },
+            }
+
+            st.write("Audit bundle")
+            st.json(audit_bundle)
 
             st.divider()
             st.subheader("Export")
@@ -472,18 +420,9 @@ def main() -> None:
                 mime="application/pdf",
             )
 
-            report_json = {
-                "meta": {
-                    "generated_at_utc": _now_utc_iso(),
-                    "app": "praf.streamlit",
-                },
-                "decision_matrix": decision_matrix,
-                "readiness": readiness,
-                "audit_bundle": audit_bundle,
-            }
             st.download_button(
                 "Download audit JSON",
-                data=json.dumps(report_json, ensure_ascii=False, indent=2).encode("utf-8"),
+                data=json.dumps(audit_bundle, ensure_ascii=False, indent=2).encode("utf-8"),
                 file_name="audit_pack.json",
                 mime="application/json",
             )
