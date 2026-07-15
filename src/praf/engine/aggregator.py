@@ -11,6 +11,7 @@ class AggregatedResult:
     domain_scores: Dict[RiskDomain, float]
     category_scores: Dict[str, float]
     domain_counts: Dict[RiskDomain, int]
+    domain_coverage: Dict[RiskDomain, float]
 
 
 def aggregate_scores(indicator_details: Dict[str, Dict[str, Any]], local_scores: Dict[str, float]) -> AggregatedResult:
@@ -42,6 +43,7 @@ def aggregate_scores(indicator_details: Dict[str, Dict[str, Any]], local_scores:
     domain_weight_ex: Dict[RiskDomain, float] = {}
     domain_dw: Dict[RiskDomain, float] = {}
     domain_counts: Dict[RiskDomain, int] = {}
+    domain_answered: Dict[RiskDomain, int] = {}
     category_sum: Dict[str, float] = {}
     category_weight_ex: Dict[str, float] = {}
     category_dw: Dict[str, float] = {}
@@ -57,6 +59,8 @@ def aggregate_scores(indicator_details: Dict[str, Dict[str, Any]], local_scores:
         domain_weight_ex[domain] = float(domain_weight_ex.get(domain, 0.0) + weight)
         domain_dw[domain] = dw  # constant across a domain's indicators
         domain_counts[domain] = int(domain_counts.get(domain, 0) + 1)
+        if bool(meta.get("answered", True)):
+            domain_answered[domain] = int(domain_answered.get(domain, 0) + 1)
 
         category_sum[category] = float(category_sum.get(category, 0.0) + contribution)
         category_weight_ex[category] = float(category_weight_ex.get(category, 0.0) + weight)
@@ -74,4 +78,14 @@ def aggregate_scores(indicator_details: Dict[str, Dict[str, Any]], local_scores:
         base_index = 100.0 * category_sum[k] / w if w > 0.0 else 0.0
         category_index[k] = float(min(100.0, base_index * category_dw.get(k, 1.0)))
 
-    return AggregatedResult(domain_scores=domain_index, category_scores=category_index, domain_counts=domain_counts)
+    domain_coverage: Dict[RiskDomain, float] = {}
+    for d in domain_counts:
+        total = max(1, int(domain_counts.get(d, 1)))
+        domain_coverage[d] = float(domain_answered.get(d, 0)) / float(total)
+
+    return AggregatedResult(
+        domain_scores=domain_index,
+        category_scores=category_index,
+        domain_counts=domain_counts,
+        domain_coverage=domain_coverage,
+    )

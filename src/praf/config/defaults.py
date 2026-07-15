@@ -20,6 +20,11 @@ class Defaults:
     low_threshold: float = 40.0
     high_threshold: float = 70.0
 
+    # A domain whose answered-indicator fraction is below this is reported as
+    # INSUFFICIENT_DATA instead of a risk level, so "no data" is not silently
+    # presented as "medium risk".
+    coverage_threshold: float = 0.5
+
     default_domain_weights: Dict[str, float] = None
     default_nature_weights: Dict[str, float] = None
 

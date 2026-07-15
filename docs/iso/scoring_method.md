@@ -100,4 +100,43 @@ Each domain index is classified against two thresholds (defaults shown):
 | `40 – <70` | action_required | revise |
 | `≥ 70` | escalation_required | escalate |
 
-The overall decision is the most severe domain decision.
+## 6. Input validation
+
+Supplied input is validated before scoring. Values that were provided but
+cannot be interpreted fail loudly instead of being silently coerced:
+
+- Unknown indicator ids are rejected.
+- Likelihood / impact / detectability values outside `1..5` are rejected.
+- A response that does not match its indicator's answer type (e.g. a number for
+  a yes/no question) is rejected.
+- Unknown `activity` / `stage` values are rejected with the list of valid
+  options.
+
+All problems are reported together. A *missing* answer is not an error — it is
+handled as reduced coverage (below).
+
+## 7. Coverage and insufficient data
+
+An indicator counts as **answered** only if the user supplied its response. A
+domain's **coverage** is the fraction of its indicators that were answered:
+
+```
+coverage = answered_indicators / total_indicators
+```
+
+If a domain's coverage is below `coverage_threshold` (default 0.5), the domain
+is reported as **insufficient_data** instead of a risk level, and its decision
+is **gather_data**. This keeps "we don't have enough input to judge" distinct
+from "the risk is medium".
+
+## 8. Overall decision
+
+The overall decision is the most severe per-domain decision, by the precedence:
+
+```
+escalate  >  gather_data  >  revise  >  proceed
+```
+
+A genuine escalation from a well-covered domain still wins, but insufficient
+coverage outranks a routine `revise` so an unreliable verdict is never quietly
+downgraded.

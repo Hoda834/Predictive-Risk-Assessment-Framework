@@ -101,6 +101,11 @@ def score_indicators(
         i = impact.get(indicator_id, 3)
         d = detectability.get(indicator_id, 3)
 
+        # An indicator counts as answered only if the user supplied a response;
+        # a missing response falls back to a neutral score, which must not be
+        # mistaken for a real "medium" signal (see coverage in the aggregator).
+        answered = isinstance(r, str) and r.strip() != "" if isinstance(r, str) else r is not None
+
         r_raw = _response_scale(indicator.answer_type.value, r)
         # Apply polarity: for protective controls (risk when the control is
         # ABSENT) an affirmative answer lowers risk, so invert the raw axis
@@ -145,6 +150,7 @@ def score_indicators(
             "category": indicator.category.value,
             "nature": indicator.nature.value,
             "polarity": indicator.polarity.value,
+            "answered": bool(answered),
             "weights": {"domain": dw, "nature": nw, "indicator": iw},
             "domain_weight": dw,
             "weight_ex_domain": weight_ex_domain,
