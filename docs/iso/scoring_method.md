@@ -40,35 +40,55 @@ base     = (Response + L + I + D) / 4          # 1..5
 severity = (base - 1) / 4                       # 0..1
 ```
 
-## 3. Weighting
+## 3. Within-domain weighting
 
-Each indicator carries a weight that reflects how much it matters in context:
+Two weights vary *between* indicators of the same domain and so shape the
+domain's aggregate:
 
 ```
-weight = domain_weight × nature_modifier × indicator_base_weight
+w = nature_modifier × indicator_base_weight
 ```
 
-- **domain_weight** is activity-dependent (e.g. supplier selection raises the
-  supply-chain domain weight).
 - **nature_modifier** weights structural/governance risks above purely technical
   ones.
 - **indicator_base_weight** is the indicator's intrinsic importance.
 
-The indicator's weighted contribution is `severity × weight`.
+The indicator's weighted contribution is `severity × w`.
 
-## 4. Domain risk index (0–100)
+The **domain_weight** is deliberately *not* included here — it is constant
+across every indicator in a domain and is applied later (step 5), because a
+constant factor would cancel out of the normalised mean below and have no
+effect.
 
-A domain's index is the **weight-normalised mean** of its indicators'
+## 4. Base domain index (0–100)
+
+A domain's base index is the **weight-normalised mean** of its indicators'
 severities, scaled to 0–100:
 
 ```
-index = 100 × Σ(severity_i × weight_i) / Σ(weight_i)
+base_index = 100 × Σ(severity_i × w_i) / Σ(w_i)
 ```
 
 Because it is normalised by the total weight, the index is always in
 `[0, 100]` regardless of how many indicators a domain has or how large their
 weights are. A domain of all-worst-case indicators scores 100; all-best scores
-0. The same formula produces the category-level indices.
+0. The same formula produces the category-level base indices.
+
+## 4b. Context-aware domain weighting
+
+The **domain_weight** is activity-dependent: the selected activity raises the
+weight of the domains it emphasises (e.g. *supplier selection* raises the
+supply-chain domain weight to 1.35, *regulatory preparation* raises regulatory
+compliance to 1.40). It is applied as a sensitivity multiplier on the base
+index and capped at 100:
+
+```
+index = min(100, base_index × domain_weight)
+```
+
+This means the same answers produce a higher risk index — and can cross into a
+higher classification band — for the domains an activity makes most relevant.
+Weights ≥ 1 only ever raise sensitivity; they never suppress risk.
 
 ## 5. Classification
 

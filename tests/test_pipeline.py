@@ -7,7 +7,7 @@ low-risk input must proceed.
 
 from praf.domain import INDICATOR_LIBRARY
 from praf.domain.activities import Activity, ProjectStage, Context
-from praf.domain.domains import activity_domain_weights
+from praf.domain.domains import RiskDomain, activity_domain_weights
 from praf.engine.scorer import score_indicators
 from praf.engine.aggregator import aggregate_scores
 from praf.engine.classifier import classify_domains, RiskLevel
@@ -54,3 +54,30 @@ def test_domain_index_bounded_0_100():
     agg, _, _ = _run({i: "no" for i in ids}, {i: 5 for i in ids})
     for score in agg.domain_scores.values():
         assert 0.0 <= score <= 100.0
+
+
+def test_domain_weight_shifts_classification():
+    """Same answers, different activity, must change the boosted domain.
+
+    Regression guard: the domain weight is constant across a domain's
+    indicators and cancels out of the weight-normalised mean, so it must be
+    applied *after* normalisation. Without that, activity_domain_weights has no
+    effect on the result and this test fails.
+    """
+    d = Defaults()
+    responses = {"I008": "yes", "I009": "no"}  # both supply-chain indicators
+    lid = {"I008": 3, "I009": 3}
+
+    def supply_chain(activity):
+        dw = activity_domain_weights(activity)
+        scored = score_indicators(responses, lid, lid, lid, dw)
+        agg = aggregate_scores(scored.indicator_details, scored.local_scores)
+        cls = classify_domains(agg.domain_scores, d.low_threshold, d.high_threshold)
+        return agg.domain_scores[RiskDomain.SUPPLY_CHAIN], cls[RiskDomain.SUPPLY_CHAIN].level
+
+    base_score, base_level = supply_chain(Activity.PRODUCT_DESIGN)       # dw = 1.00
+    boosted_score, boosted_level = supply_chain(Activity.SUPPLIER_SELECTION)  # dw = 1.35
+
+    assert boosted_score > base_score
+    assert base_level == RiskLevel.ACTION_REQUIRED
+    assert boosted_level == RiskLevel.ESCALATION_REQUIRED

@@ -126,12 +126,18 @@ def score_indicators(
         dw = float(domain_weights.get(indicator.domain, 1.0))
         nw = float(nature_weight_modifier(indicator.nature))
         iw = float(indicator.base_weight)
-        weight = dw * nw * iw
 
-        # Weighted contribution of this indicator. The domain-level 0..100 index
-        # is a weight-normalised mean of these severities (see aggregator), so a
-        # domain can reach any level regardless of its weight magnitudes.
-        contribution = severity * weight
+        # The domain weight (dw) is constant across every indicator in a domain,
+        # so it would cancel out of the weight-normalised mean below and have no
+        # effect. It is therefore applied *after* normalisation in the
+        # aggregator (as a sensitivity multiplier), and kept out of the
+        # per-indicator contribution weight here.
+        weight_ex_domain = nw * iw
+
+        # Weighted contribution of this indicator to its domain's mean severity.
+        # nw and iw vary within a domain, so they genuinely shape the ranking
+        # and the aggregate; dw does not and is excluded.
+        contribution = severity * weight_ex_domain
 
         local_scores[indicator_id] = float(contribution)
         details[indicator_id] = {
@@ -140,7 +146,8 @@ def score_indicators(
             "nature": indicator.nature.value,
             "polarity": indicator.polarity.value,
             "weights": {"domain": dw, "nature": nw, "indicator": iw},
-            "weight_product": weight,
+            "domain_weight": dw,
+            "weight_ex_domain": weight_ex_domain,
             "inputs": {"response": r, "likelihood": l, "impact": i, "detectability": d},
             "scaled": {"response": r_scale, "likelihood": l_scale, "impact": i_scale, "detectability": d_scale},
             "base": base,
