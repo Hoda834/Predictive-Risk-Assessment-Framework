@@ -13,8 +13,12 @@ class Defaults:
     detectability_scale_min: int = 1
     detectability_scale_max: int = 5
 
-    low_threshold: float = 20.0
-    high_threshold: float = 45.0
+    # Thresholds on the 0..100 domain risk index produced by the aggregator.
+    #   index <  low_threshold                     -> acceptable
+    #   low_threshold <= index < high_threshold     -> action_required
+    #   index >= high_threshold                     -> escalation_required
+    low_threshold: float = 40.0
+    high_threshold: float = 70.0
 
     default_domain_weights: Dict[str, float] = None
     default_nature_weights: Dict[str, float] = None
