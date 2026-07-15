@@ -1,12 +1,29 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import Dict
 
 from praf.config.schemas import AllowedAnswerType
 from .categories import RiskCategory
 from .domains import RiskDomain
 from .natures import RiskNature
+
+
+class Polarity(str, Enum):
+    """Direction of an indicator's response relative to risk.
+
+    RISK_WHEN_ABSENT  -- the question asks whether a protective control is in
+                         place (e.g. "Are assumptions documented?"). An
+                         affirmative answer means the control exists, so risk is
+                         LOW; a negative answer means risk is HIGH.
+    RISK_WHEN_PRESENT -- the question asks about the presence/level of a hazard
+                         (e.g. "Is there single-source dependency?"). An
+                         affirmative / high answer means risk is HIGH.
+    """
+
+    RISK_WHEN_ABSENT = "risk_when_absent"
+    RISK_WHEN_PRESENT = "risk_when_present"
 
 
 @dataclass(frozen=True)
@@ -18,6 +35,7 @@ class Indicator:
     category: RiskCategory
     nature: RiskNature
     base_weight: float = 1.0
+    polarity: Polarity = Polarity.RISK_WHEN_ABSENT
 
 
 INDICATOR_LIBRARY: Dict[str, Indicator] = {
@@ -56,6 +74,7 @@ INDICATOR_LIBRARY: Dict[str, Indicator] = {
         category=RiskCategory.ENVIRONMENTAL_SENSITIVITY,
         nature=RiskNature.TECHNICAL,
         base_weight=1.00,
+        polarity=Polarity.RISK_WHEN_PRESENT,
     ),
     "I005": Indicator(
         indicator_id="I005",
@@ -65,6 +84,7 @@ INDICATOR_LIBRARY: Dict[str, Indicator] = {
         category=RiskCategory.DRIFT_STABILITY,
         nature=RiskNature.TECHNICAL,
         base_weight=1.05,
+        polarity=Polarity.RISK_WHEN_PRESENT,
     ),
     "I006": Indicator(
         indicator_id="I006",
@@ -74,6 +94,7 @@ INDICATOR_LIBRARY: Dict[str, Indicator] = {
         category=RiskCategory.BATCH_VARIABILITY,
         nature=RiskNature.PROCESS,
         base_weight=1.10,
+        polarity=Polarity.RISK_WHEN_PRESENT,
     ),
     "I007": Indicator(
         indicator_id="I007",
@@ -92,6 +113,7 @@ INDICATOR_LIBRARY: Dict[str, Indicator] = {
         category=RiskCategory.SINGLE_SOURCE_SUPPLIER,
         nature=RiskNature.EXTERNAL_DEPENDENCY,
         base_weight=1.20,
+        polarity=Polarity.RISK_WHEN_PRESENT,
     ),
     "I009": Indicator(
         indicator_id="I009",
