@@ -1,0 +1,3 @@
+indicator_id,question,answer_type,domain,category,nature,base_weight,polarity
+I001,Are key design assumptions explicitly documented?,yes_no,design_maturity,unvalidated_assumptions,structural,1.10,risk_when_absent
+I008,Is there single-source dependency for critical components?,yes_no,supply_chain,single_source_supplier,external_dependency,1.20,risk_when_present

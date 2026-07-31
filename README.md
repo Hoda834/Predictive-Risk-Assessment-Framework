@@ -47,5 +47,39 @@ predictive-risk-assessment-framework/
   tests/
     test_scorer.py
     test_classifier.py
+    test_pipeline.py
   scripts/
     generate_example_outputs.py
+
+## Installation
+
+```bash
+pip install -e .
+```
+
+## Usage
+
+Run the scoring pipeline on a JSON input file (see `data/examples/example_inputs.json`):
+
+```bash
+python -m praf.cli.main data/examples/example_inputs.json
+```
+
+Launch the interactive app:
+
+```bash
+streamlit run app.py
+```
+
+Regenerate the example output:
+
+```bash
+python scripts/generate_example_outputs.py
+```
+
+## Tests
+
+```bash
+pip install pytest
+pytest
+```
