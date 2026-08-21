@@ -1,0 +1,1263 @@
+{
+  "context": {
+    "activity": "product_design",
+    "stage": "design"
+  },
+  "input_completeness": {
+    "complete": true,
+    "completeness_ratio": 1.0,
+    "indicators_fully_answered": 12,
+    "total_indicators": 12,
+    "missing": {},
+    "unknown_indicator_ids": [],
+    "out_of_range": {}
+  },
+  "overall_decision": "escalate",
+  "per_domain_decision": {
+    "design_maturity": "escalate",
+    "regulatory_compliance": "escalate",
+    "measurement_integrity": "revise",
+    "manufacturing": "revise",
+    "supply_chain": "escalate",
+    "data_evidence": "escalate",
+    "decision_governance": "escalate"
+  },
+  "domain_scores": {
+    "design_maturity": {
+      "score": 78.125,
+      "level": "escalation_required"
+    },
+    "regulatory_compliance": {
+      "score": 98.45318651574803,
+      "level": "escalation_required"
+    },
+    "measurement_integrity": {
+      "score": 55.94512195121953,
+      "level": "action_required"
+    },
+    "manufacturing": {
+      "score": 59.375000000000014,
+      "level": "action_required"
+    },
+    "supply_chain": {
+      "score": 75.00000000000001,
+      "level": "escalation_required"
+    },
+    "data_evidence": {
+      "score": 96.25000000000001,
+      "level": "escalation_required"
+    },
+    "decision_governance": {
+      "score": 99.76063829787236,
+      "level": "escalation_required"
+    }
+  },
+  "severity_overrides": [],
+  "initial": {
+    "overall_decision": "escalate",
+    "per_domain_decision": {
+      "design_maturity": "escalate",
+      "regulatory_compliance": "escalate",
+      "measurement_integrity": "revise",
+      "manufacturing": "escalate",
+      "supply_chain": "escalate",
+      "data_evidence": "escalate",
+      "decision_governance": "escalate"
+    },
+    "domain_scores": {
+      "design_maturity": {
+        "score": 100.0,
+        "level": "escalation_required"
+      },
+      "regulatory_compliance": {
+        "score": 98.45318651574803,
+        "level": "escalation_required"
+      },
+      "measurement_integrity": {
+        "score": 65.54878048780489,
+        "level": "action_required"
+      },
+      "manufacturing": {
+        "score": 78.12500000000001,
+        "level": "escalation_required"
+      },
+      "supply_chain": {
+        "score": 75.00000000000001,
+        "level": "escalation_required"
+      },
+      "data_evidence": {
+        "score": 96.25000000000001,
+        "level": "escalation_required"
+      },
+      "decision_governance": {
+        "score": 99.76063829787236,
+        "level": "escalation_required"
+      }
+    },
+    "severity_overrides": []
+  },
+  "residual": {
+    "overall_decision": "escalate",
+    "per_domain_decision": {
+      "design_maturity": "escalate",
+      "regulatory_compliance": "escalate",
+      "measurement_integrity": "revise",
+      "manufacturing": "revise",
+      "supply_chain": "escalate",
+      "data_evidence": "escalate",
+      "decision_governance": "escalate"
+    },
+    "domain_scores": {
+      "design_maturity": {
+        "score": 78.125,
+        "level": "escalation_required"
+      },
+      "regulatory_compliance": {
+        "score": 98.45318651574803,
+        "level": "escalation_required"
+      },
+      "measurement_integrity": {
+        "score": 55.94512195121953,
+        "level": "action_required"
+      },
+      "manufacturing": {
+        "score": 59.375000000000014,
+        "level": "action_required"
+      },
+      "supply_chain": {
+        "score": 75.00000000000001,
+        "level": "escalation_required"
+      },
+      "data_evidence": {
+        "score": 96.25000000000001,
+        "level": "escalation_required"
+      },
+      "decision_governance": {
+        "score": 99.76063829787236,
+        "level": "escalation_required"
+      }
+    },
+    "severity_overrides": [],
+    "controls_applied": {
+      "I001": [
+        "C001"
+      ],
+      "I005": [
+        "C002"
+      ],
+      "I006": [
+        "C002"
+      ],
+      "I007": [
+        "C002"
+      ]
+    },
+    "controls_not_applied": [
+      "C003"
+    ],
+    "controls_unverified": [
+      "C002"
+    ]
+  },
+  "controls": [
+    {
+      "control_id": "C001",
+      "name": "Design assumptions register with owner sign-off",
+      "status": "verified",
+      "indicator_ids": [
+        "I001"
+      ],
+      "likelihood_reduction": 2,
+      "detectability_reduction": 1,
+      "applied": true
+    },
+    {
+      "control_id": "C002",
+      "name": "Automated QC trend monitoring on CTQ parameters",
+      "status": "implemented",
+      "indicator_ids": [
+        "I005",
+        "I006",
+        "I007"
+      ],
+      "likelihood_reduction": 1,
+      "detectability_reduction": 2,
+      "applied": true
+    },
+    {
+      "control_id": "C003",
+      "name": "Second-source qualification for critical reagents",
+      "status": "planned",
+      "indicator_ids": [
+        "I008"
+      ],
+      "likelihood_reduction": 2,
+      "detectability_reduction": 0,
+      "applied": false
+    }
+  ],
+  "control_issues": [],
+  "traceability": [
+    {
+      "indicator_id": "I001",
+      "question": "Are key design assumptions explicitly documented?",
+      "domain": "design_maturity",
+      "initial_severity": 0.8125,
+      "controls_applied": [
+        "C001"
+      ],
+      "residual_severity": 0.625,
+      "domain_initial_level": "escalation_required",
+      "domain_residual_level": "escalation_required",
+      "residual_decision": "escalate"
+    },
+    {
+      "indicator_id": "I002",
+      "question": "Is there a traceable link from requirements to design decisions?",
+      "domain": "regulatory_compliance",
+      "initial_severity": 0.9375,
+      "controls_applied": [],
+      "residual_severity": 0.9375,
+      "domain_initial_level": "escalation_required",
+      "domain_residual_level": "escalation_required",
+      "residual_decision": "escalate"
+    },
+    {
+      "indicator_id": "I003",
+      "question": "Are acceptance criteria defined for key verification checks?",
+      "domain": "regulatory_compliance",
+      "initial_severity": 0.75,
+      "controls_applied": [],
+      "residual_severity": 0.75,
+      "domain_initial_level": "escalation_required",
+      "domain_residual_level": "escalation_required",
+      "residual_decision": "escalate"
+    },
+    {
+      "indicator_id": "I004",
+      "question": "How sensitive is the system to environmental conditions?",
+      "domain": "measurement_integrity",
+      "initial_severity": 0.6875,
+      "controls_applied": [],
+      "residual_severity": 0.6875,
+      "domain_initial_level": "action_required",
+      "domain_residual_level": "action_required",
+      "residual_decision": "revise"
+    },
+    {
+      "indicator_id": "I005",
+      "question": "How likely is long-term drift without an early warning signal?",
+      "domain": "measurement_integrity",
+      "initial_severity": 0.625,
+      "controls_applied": [
+        "C002"
+      ],
+      "residual_severity": 0.4375,
+      "domain_initial_level": "action_required",
+      "domain_residual_level": "action_required",
+      "residual_decision": "revise"
+    },
+    {
+      "indicator_id": "I006",
+      "question": "How high is batch-to-batch variability exposure in consumables?",
+      "domain": "manufacturing",
+      "initial_severity": 0.8125,
+      "controls_applied": [
+        "C002"
+      ],
+      "residual_severity": 0.625,
+      "domain_initial_level": "escalation_required",
+      "domain_residual_level": "action_required",
+      "residual_decision": "revise"
+    },
+    {
+      "indicator_id": "I007",
+      "question": "Is there a defined QC threshold set for critical-to-quality parameters?",
+      "domain": "manufacturing",
+      "initial_severity": 0.75,
+      "controls_applied": [
+        "C002"
+      ],
+      "residual_severity": 0.5625,
+      "domain_initial_level": "escalation_required",
+      "domain_residual_level": "action_required",
+      "residual_decision": "revise"
+    },
+    {
+      "indicator_id": "I008",
+      "question": "Is there single-source dependency for critical components?",
+      "domain": "supply_chain",
+      "initial_severity": 0.75,
+      "controls_applied": [],
+      "residual_severity": 0.75,
+      "domain_initial_level": "escalation_required",
+      "domain_residual_level": "escalation_required",
+      "residual_decision": "escalate"
+    },
+    {
+      "indicator_id": "I009",
+      "question": "Is supplier change control defined and enforced contractually?",
+      "domain": "supply_chain",
+      "initial_severity": 0.75,
+      "controls_applied": [],
+      "residual_severity": 0.75,
+      "domain_initial_level": "escalation_required",
+      "domain_residual_level": "escalation_required",
+      "residual_decision": "escalate"
+    },
+    {
+      "indicator_id": "I010",
+      "question": "Is the data capture plan defined for this stage of the project?",
+      "domain": "data_evidence",
+      "initial_severity": 0.875,
+      "controls_applied": [],
+      "residual_severity": 0.875,
+      "domain_initial_level": "escalation_required",
+      "domain_residual_level": "escalation_required",
+      "residual_decision": "escalate"
+    },
+    {
+      "indicator_id": "I011",
+      "question": "Is there an auditable record of key risk decisions and changes?",
+      "domain": "decision_governance",
+      "initial_severity": 0.875,
+      "controls_applied": [],
+      "residual_severity": 0.875,
+      "domain_initial_level": "escalation_required",
+      "domain_residual_level": "escalation_required",
+      "residual_decision": "escalate"
+    },
+    {
+      "indicator_id": "I012",
+      "question": "Are escalation thresholds defined and applied consistently?",
+      "domain": "decision_governance",
+      "initial_severity": 0.9375,
+      "controls_applied": [],
+      "residual_severity": 0.9375,
+      "domain_initial_level": "escalation_required",
+      "domain_residual_level": "escalation_required",
+      "residual_decision": "escalate"
+    }
+  ],
+  "sensitivity": {
+    "method": "one-at-a-time ±1 perturbation of each effective likelihood/impact/detectability value (clamped to 1–5)",
+    "baseline_domain_levels": {
+      "design_maturity": "escalation_required",
+      "regulatory_compliance": "escalation_required",
+      "measurement_integrity": "action_required",
+      "manufacturing": "action_required",
+      "supply_chain": "escalation_required",
+      "data_evidence": "escalation_required",
+      "decision_governance": "escalation_required"
+    },
+    "baseline_overall_decision": "escalate",
+    "domain_flips": [],
+    "overall_decision_flips": [],
+    "fragile_domains": [],
+    "stable": true
+  },
+  "top_contributors_by_domain": {
+    "design_maturity": [
+      [
+        "I001",
+        0.859375
+      ]
+    ],
+    "regulatory_compliance": [
+      [
+        "I002",
+        1.34765625
+      ],
+      [
+        "I003",
+        0.826875
+      ]
+    ],
+    "measurement_integrity": [
+      [
+        "I004",
+        0.6875
+      ],
+      [
+        "I005",
+        0.45937500000000003
+      ]
+    ],
+    "manufacturing": [
+      [
+        "I006",
+        0.7218750000000002
+      ],
+      [
+        "I007",
+        0.6496875000000002
+      ]
+    ],
+    "supply_chain": [
+      [
+        "I008",
+        1.035
+      ],
+      [
+        "I009",
+        0.94875
+      ]
+    ],
+    "data_evidence": [
+      [
+        "I010",
+        1.155
+      ]
+    ],
+    "decision_governance": [
+      [
+        "I012",
+        1.3499999999999999
+      ],
+      [
+        "I011",
+        1.2075
+      ]
+    ]
+  },
+  "audit_trail": [
+    {
+      "key": "schema_version",
+      "value": "1.0"
+    },
+    {
+      "key": "tool_version",
+      "value": "0.3.0"
+    },
+    {
+      "key": "model_version",
+      "value": "risk-model-2026.2"
+    },
+    {
+      "key": "generated_at",
+      "value": "2026-01-01T00:00:00+00:00"
+    },
+    {
+      "key": "context",
+      "value": {
+        "activity": "product_design",
+        "stage": "design"
+      }
+    },
+    {
+      "key": "thresholds",
+      "value": {
+        "low": 40.0,
+        "high": 70.0
+      }
+    },
+    {
+      "key": "input_completeness",
+      "value": {
+        "complete": true,
+        "completeness_ratio": 1.0,
+        "indicators_fully_answered": 12,
+        "total_indicators": 12,
+        "missing": {},
+        "unknown_indicator_ids": [],
+        "out_of_range": {}
+      }
+    },
+    {
+      "key": "overall_decision",
+      "value": "escalate"
+    },
+    {
+      "key": "per_domain_decision",
+      "value": {
+        "design_maturity": "escalate",
+        "regulatory_compliance": "escalate",
+        "measurement_integrity": "revise",
+        "manufacturing": "revise",
+        "supply_chain": "escalate",
+        "data_evidence": "escalate",
+        "decision_governance": "escalate"
+      }
+    },
+    {
+      "key": "domain_scores",
+      "value": {
+        "design_maturity": {
+          "score": 78.125,
+          "level": "escalation_required"
+        },
+        "regulatory_compliance": {
+          "score": 98.45318651574803,
+          "level": "escalation_required"
+        },
+        "measurement_integrity": {
+          "score": 55.94512195121953,
+          "level": "action_required"
+        },
+        "manufacturing": {
+          "score": 59.375000000000014,
+          "level": "action_required"
+        },
+        "supply_chain": {
+          "score": 75.00000000000001,
+          "level": "escalation_required"
+        },
+        "data_evidence": {
+          "score": 96.25000000000001,
+          "level": "escalation_required"
+        },
+        "decision_governance": {
+          "score": 99.76063829787236,
+          "level": "escalation_required"
+        }
+      }
+    },
+    {
+      "key": "initial",
+      "value": {
+        "overall_decision": "escalate",
+        "per_domain_decision": {
+          "design_maturity": "escalate",
+          "regulatory_compliance": "escalate",
+          "measurement_integrity": "revise",
+          "manufacturing": "escalate",
+          "supply_chain": "escalate",
+          "data_evidence": "escalate",
+          "decision_governance": "escalate"
+        },
+        "domain_scores": {
+          "design_maturity": {
+            "score": 100.0,
+            "level": "escalation_required"
+          },
+          "regulatory_compliance": {
+            "score": 98.45318651574803,
+            "level": "escalation_required"
+          },
+          "measurement_integrity": {
+            "score": 65.54878048780489,
+            "level": "action_required"
+          },
+          "manufacturing": {
+            "score": 78.12500000000001,
+            "level": "escalation_required"
+          },
+          "supply_chain": {
+            "score": 75.00000000000001,
+            "level": "escalation_required"
+          },
+          "data_evidence": {
+            "score": 96.25000000000001,
+            "level": "escalation_required"
+          },
+          "decision_governance": {
+            "score": 99.76063829787236,
+            "level": "escalation_required"
+          }
+        },
+        "severity_overrides": []
+      }
+    },
+    {
+      "key": "residual",
+      "value": {
+        "overall_decision": "escalate",
+        "per_domain_decision": {
+          "design_maturity": "escalate",
+          "regulatory_compliance": "escalate",
+          "measurement_integrity": "revise",
+          "manufacturing": "revise",
+          "supply_chain": "escalate",
+          "data_evidence": "escalate",
+          "decision_governance": "escalate"
+        },
+        "domain_scores": {
+          "design_maturity": {
+            "score": 78.125,
+            "level": "escalation_required"
+          },
+          "regulatory_compliance": {
+            "score": 98.45318651574803,
+            "level": "escalation_required"
+          },
+          "measurement_integrity": {
+            "score": 55.94512195121953,
+            "level": "action_required"
+          },
+          "manufacturing": {
+            "score": 59.375000000000014,
+            "level": "action_required"
+          },
+          "supply_chain": {
+            "score": 75.00000000000001,
+            "level": "escalation_required"
+          },
+          "data_evidence": {
+            "score": 96.25000000000001,
+            "level": "escalation_required"
+          },
+          "decision_governance": {
+            "score": 99.76063829787236,
+            "level": "escalation_required"
+          }
+        },
+        "severity_overrides": [],
+        "controls_applied": {
+          "I001": [
+            "C001"
+          ],
+          "I005": [
+            "C002"
+          ],
+          "I006": [
+            "C002"
+          ],
+          "I007": [
+            "C002"
+          ]
+        },
+        "controls_not_applied": [
+          "C003"
+        ],
+        "controls_unverified": [
+          "C002"
+        ]
+      }
+    },
+    {
+      "key": "controls",
+      "value": [
+        {
+          "control_id": "C001",
+          "name": "Design assumptions register with owner sign-off",
+          "status": "verified",
+          "indicator_ids": [
+            "I001"
+          ],
+          "likelihood_reduction": 2,
+          "detectability_reduction": 1,
+          "applied": true
+        },
+        {
+          "control_id": "C002",
+          "name": "Automated QC trend monitoring on CTQ parameters",
+          "status": "implemented",
+          "indicator_ids": [
+            "I005",
+            "I006",
+            "I007"
+          ],
+          "likelihood_reduction": 1,
+          "detectability_reduction": 2,
+          "applied": true
+        },
+        {
+          "control_id": "C003",
+          "name": "Second-source qualification for critical reagents",
+          "status": "planned",
+          "indicator_ids": [
+            "I008"
+          ],
+          "likelihood_reduction": 2,
+          "detectability_reduction": 0,
+          "applied": false
+        }
+      ]
+    },
+    {
+      "key": "traceability",
+      "value": [
+        {
+          "indicator_id": "I001",
+          "question": "Are key design assumptions explicitly documented?",
+          "domain": "design_maturity",
+          "initial_severity": 0.8125,
+          "controls_applied": [
+            "C001"
+          ],
+          "residual_severity": 0.625,
+          "domain_initial_level": "escalation_required",
+          "domain_residual_level": "escalation_required",
+          "residual_decision": "escalate"
+        },
+        {
+          "indicator_id": "I002",
+          "question": "Is there a traceable link from requirements to design decisions?",
+          "domain": "regulatory_compliance",
+          "initial_severity": 0.9375,
+          "controls_applied": [],
+          "residual_severity": 0.9375,
+          "domain_initial_level": "escalation_required",
+          "domain_residual_level": "escalation_required",
+          "residual_decision": "escalate"
+        },
+        {
+          "indicator_id": "I003",
+          "question": "Are acceptance criteria defined for key verification checks?",
+          "domain": "regulatory_compliance",
+          "initial_severity": 0.75,
+          "controls_applied": [],
+          "residual_severity": 0.75,
+          "domain_initial_level": "escalation_required",
+          "domain_residual_level": "escalation_required",
+          "residual_decision": "escalate"
+        },
+        {
+          "indicator_id": "I004",
+          "question": "How sensitive is the system to environmental conditions?",
+          "domain": "measurement_integrity",
+          "initial_severity": 0.6875,
+          "controls_applied": [],
+          "residual_severity": 0.6875,
+          "domain_initial_level": "action_required",
+          "domain_residual_level": "action_required",
+          "residual_decision": "revise"
+        },
+        {
+          "indicator_id": "I005",
+          "question": "How likely is long-term drift without an early warning signal?",
+          "domain": "measurement_integrity",
+          "initial_severity": 0.625,
+          "controls_applied": [
+            "C002"
+          ],
+          "residual_severity": 0.4375,
+          "domain_initial_level": "action_required",
+          "domain_residual_level": "action_required",
+          "residual_decision": "revise"
+        },
+        {
+          "indicator_id": "I006",
+          "question": "How high is batch-to-batch variability exposure in consumables?",
+          "domain": "manufacturing",
+          "initial_severity": 0.8125,
+          "controls_applied": [
+            "C002"
+          ],
+          "residual_severity": 0.625,
+          "domain_initial_level": "escalation_required",
+          "domain_residual_level": "action_required",
+          "residual_decision": "revise"
+        },
+        {
+          "indicator_id": "I007",
+          "question": "Is there a defined QC threshold set for critical-to-quality parameters?",
+          "domain": "manufacturing",
+          "initial_severity": 0.75,
+          "controls_applied": [
+            "C002"
+          ],
+          "residual_severity": 0.5625,
+          "domain_initial_level": "escalation_required",
+          "domain_residual_level": "action_required",
+          "residual_decision": "revise"
+        },
+        {
+          "indicator_id": "I008",
+          "question": "Is there single-source dependency for critical components?",
+          "domain": "supply_chain",
+          "initial_severity": 0.75,
+          "controls_applied": [],
+          "residual_severity": 0.75,
+          "domain_initial_level": "escalation_required",
+          "domain_residual_level": "escalation_required",
+          "residual_decision": "escalate"
+        },
+        {
+          "indicator_id": "I009",
+          "question": "Is supplier change control defined and enforced contractually?",
+          "domain": "supply_chain",
+          "initial_severity": 0.75,
+          "controls_applied": [],
+          "residual_severity": 0.75,
+          "domain_initial_level": "escalation_required",
+          "domain_residual_level": "escalation_required",
+          "residual_decision": "escalate"
+        },
+        {
+          "indicator_id": "I010",
+          "question": "Is the data capture plan defined for this stage of the project?",
+          "domain": "data_evidence",
+          "initial_severity": 0.875,
+          "controls_applied": [],
+          "residual_severity": 0.875,
+          "domain_initial_level": "escalation_required",
+          "domain_residual_level": "escalation_required",
+          "residual_decision": "escalate"
+        },
+        {
+          "indicator_id": "I011",
+          "question": "Is there an auditable record of key risk decisions and changes?",
+          "domain": "decision_governance",
+          "initial_severity": 0.875,
+          "controls_applied": [],
+          "residual_severity": 0.875,
+          "domain_initial_level": "escalation_required",
+          "domain_residual_level": "escalation_required",
+          "residual_decision": "escalate"
+        },
+        {
+          "indicator_id": "I012",
+          "question": "Are escalation thresholds defined and applied consistently?",
+          "domain": "decision_governance",
+          "initial_severity": 0.9375,
+          "controls_applied": [],
+          "residual_severity": 0.9375,
+          "domain_initial_level": "escalation_required",
+          "domain_residual_level": "escalation_required",
+          "residual_decision": "escalate"
+        }
+      ]
+    },
+    {
+      "key": "sensitivity",
+      "value": {
+        "method": "one-at-a-time ±1 perturbation of each effective likelihood/impact/detectability value (clamped to 1–5)",
+        "baseline_domain_levels": {
+          "design_maturity": "escalation_required",
+          "regulatory_compliance": "escalation_required",
+          "measurement_integrity": "action_required",
+          "manufacturing": "action_required",
+          "supply_chain": "escalation_required",
+          "data_evidence": "escalation_required",
+          "decision_governance": "escalation_required"
+        },
+        "baseline_overall_decision": "escalate",
+        "domain_flips": [],
+        "overall_decision_flips": [],
+        "fragile_domains": [],
+        "stable": true
+      }
+    },
+    {
+      "key": "indicator_details",
+      "value": {
+        "I001": {
+          "domain": "design_maturity",
+          "category": "unvalidated_assumptions",
+          "nature": "structural",
+          "polarity": "risk_when_absent",
+          "weights": {
+            "domain": 1.25,
+            "nature": 1.25,
+            "indicator": 1.1
+          },
+          "domain_weight": 1.25,
+          "weight_ex_domain": 1.375,
+          "inputs": {
+            "response": "no",
+            "likelihood": 4,
+            "impact": 4,
+            "detectability": 4
+          },
+          "scaled": {
+            "response": 5.0,
+            "likelihood": 4.0,
+            "impact": 4.0,
+            "detectability": 4.0
+          },
+          "provided": {
+            "response": true,
+            "likelihood": true,
+            "impact": true,
+            "detectability": true
+          },
+          "complete": true,
+          "base": 4.25,
+          "severity": 0.8125
+        },
+        "I002": {
+          "domain": "regulatory_compliance",
+          "category": "traceability_gaps",
+          "nature": "structural",
+          "polarity": "risk_when_absent",
+          "weights": {
+            "domain": 1.15,
+            "nature": 1.25,
+            "indicator": 1.15
+          },
+          "domain_weight": 1.15,
+          "weight_ex_domain": 1.4375,
+          "inputs": {
+            "response": "no",
+            "likelihood": 4,
+            "impact": 5,
+            "detectability": 5
+          },
+          "scaled": {
+            "response": 5.0,
+            "likelihood": 4.0,
+            "impact": 5.0,
+            "detectability": 5.0
+          },
+          "provided": {
+            "response": true,
+            "likelihood": true,
+            "impact": true,
+            "detectability": true
+          },
+          "complete": true,
+          "base": 4.75,
+          "severity": 0.9375
+        },
+        "I003": {
+          "domain": "regulatory_compliance",
+          "category": "documentation_gaps",
+          "nature": "process",
+          "polarity": "risk_when_absent",
+          "weights": {
+            "domain": 1.15,
+            "nature": 1.05,
+            "indicator": 1.05
+          },
+          "domain_weight": 1.15,
+          "weight_ex_domain": 1.1025,
+          "inputs": {
+            "response": "no",
+            "likelihood": 3,
+            "impact": 4,
+            "detectability": 4
+          },
+          "scaled": {
+            "response": 5.0,
+            "likelihood": 3.0,
+            "impact": 4.0,
+            "detectability": 4.0
+          },
+          "provided": {
+            "response": true,
+            "likelihood": true,
+            "impact": true,
+            "detectability": true
+          },
+          "complete": true,
+          "base": 4.0,
+          "severity": 0.75
+        },
+        "I004": {
+          "domain": "measurement_integrity",
+          "category": "environmental_sensitivity",
+          "nature": "technical",
+          "polarity": "risk_when_present",
+          "weights": {
+            "domain": 1.0,
+            "nature": 1.0,
+            "indicator": 1.0
+          },
+          "domain_weight": 1.0,
+          "weight_ex_domain": 1.0,
+          "inputs": {
+            "response": "high",
+            "likelihood": 3,
+            "impact": 4,
+            "detectability": 3
+          },
+          "scaled": {
+            "response": 5.0,
+            "likelihood": 3.0,
+            "impact": 4.0,
+            "detectability": 3.0
+          },
+          "provided": {
+            "response": true,
+            "likelihood": true,
+            "impact": true,
+            "detectability": true
+          },
+          "complete": true,
+          "base": 3.75,
+          "severity": 0.6875
+        },
+        "I005": {
+          "domain": "measurement_integrity",
+          "category": "drift_stability",
+          "nature": "technical",
+          "polarity": "risk_when_present",
+          "weights": {
+            "domain": 1.0,
+            "nature": 1.0,
+            "indicator": 1.05
+          },
+          "domain_weight": 1.0,
+          "weight_ex_domain": 1.05,
+          "inputs": {
+            "response": "medium",
+            "likelihood": 3,
+            "impact": 4,
+            "detectability": 4
+          },
+          "scaled": {
+            "response": 3.0,
+            "likelihood": 3.0,
+            "impact": 4.0,
+            "detectability": 4.0
+          },
+          "provided": {
+            "response": true,
+            "likelihood": true,
+            "impact": true,
+            "detectability": true
+          },
+          "complete": true,
+          "base": 3.5,
+          "severity": 0.625
+        },
+        "I006": {
+          "domain": "manufacturing",
+          "category": "batch_variability",
+          "nature": "process",
+          "polarity": "risk_when_present",
+          "weights": {
+            "domain": 1.0,
+            "nature": 1.05,
+            "indicator": 1.1
+          },
+          "domain_weight": 1.0,
+          "weight_ex_domain": 1.1550000000000002,
+          "inputs": {
+            "response": "high",
+            "likelihood": 4,
+            "impact": 4,
+            "detectability": 4
+          },
+          "scaled": {
+            "response": 5.0,
+            "likelihood": 4.0,
+            "impact": 4.0,
+            "detectability": 4.0
+          },
+          "provided": {
+            "response": true,
+            "likelihood": true,
+            "impact": true,
+            "detectability": true
+          },
+          "complete": true,
+          "base": 4.25,
+          "severity": 0.8125
+        },
+        "I007": {
+          "domain": "manufacturing",
+          "category": "qc_gaps",
+          "nature": "process",
+          "polarity": "risk_when_absent",
+          "weights": {
+            "domain": 1.0,
+            "nature": 1.05,
+            "indicator": 1.1
+          },
+          "domain_weight": 1.0,
+          "weight_ex_domain": 1.1550000000000002,
+          "inputs": {
+            "response": "no",
+            "likelihood": 3,
+            "impact": 4,
+            "detectability": 4
+          },
+          "scaled": {
+            "response": 5.0,
+            "likelihood": 3.0,
+            "impact": 4.0,
+            "detectability": 4.0
+          },
+          "provided": {
+            "response": true,
+            "likelihood": true,
+            "impact": true,
+            "detectability": true
+          },
+          "complete": true,
+          "base": 4.0,
+          "severity": 0.75
+        },
+        "I008": {
+          "domain": "supply_chain",
+          "category": "single_source_supplier",
+          "nature": "external_dependency",
+          "polarity": "risk_when_present",
+          "weights": {
+            "domain": 1.0,
+            "nature": 1.15,
+            "indicator": 1.2
+          },
+          "domain_weight": 1.0,
+          "weight_ex_domain": 1.38,
+          "inputs": {
+            "response": "yes",
+            "likelihood": 3,
+            "impact": 4,
+            "detectability": 4
+          },
+          "scaled": {
+            "response": 5.0,
+            "likelihood": 3.0,
+            "impact": 4.0,
+            "detectability": 4.0
+          },
+          "provided": {
+            "response": true,
+            "likelihood": true,
+            "impact": true,
+            "detectability": true
+          },
+          "complete": true,
+          "base": 4.0,
+          "severity": 0.75
+        },
+        "I009": {
+          "domain": "supply_chain",
+          "category": "supplier_change_risk",
+          "nature": "external_dependency",
+          "polarity": "risk_when_absent",
+          "weights": {
+            "domain": 1.0,
+            "nature": 1.15,
+            "indicator": 1.1
+          },
+          "domain_weight": 1.0,
+          "weight_ex_domain": 1.265,
+          "inputs": {
+            "response": "no",
+            "likelihood": 3,
+            "impact": 4,
+            "detectability": 4
+          },
+          "scaled": {
+            "response": 5.0,
+            "likelihood": 3.0,
+            "impact": 4.0,
+            "detectability": 4.0
+          },
+          "provided": {
+            "response": true,
+            "likelihood": true,
+            "impact": true,
+            "detectability": true
+          },
+          "complete": true,
+          "base": 4.0,
+          "severity": 0.75
+        },
+        "I010": {
+          "domain": "data_evidence",
+          "category": "data_definition_gaps",
+          "nature": "decision_governance",
+          "polarity": "risk_when_absent",
+          "weights": {
+            "domain": 1.1,
+            "nature": 1.2,
+            "indicator": 1.1
+          },
+          "domain_weight": 1.1,
+          "weight_ex_domain": 1.32,
+          "inputs": {
+            "response": "no",
+            "likelihood": 4,
+            "impact": 4,
+            "detectability": 5
+          },
+          "scaled": {
+            "response": 5.0,
+            "likelihood": 4.0,
+            "impact": 4.0,
+            "detectability": 5.0
+          },
+          "provided": {
+            "response": true,
+            "likelihood": true,
+            "impact": true,
+            "detectability": true
+          },
+          "complete": true,
+          "base": 4.5,
+          "severity": 0.875
+        },
+        "I011": {
+          "domain": "decision_governance",
+          "category": "audit_trail_gaps",
+          "nature": "decision_governance",
+          "polarity": "risk_when_absent",
+          "weights": {
+            "domain": 1.1,
+            "nature": 1.2,
+            "indicator": 1.15
+          },
+          "domain_weight": 1.1,
+          "weight_ex_domain": 1.38,
+          "inputs": {
+            "response": "no",
+            "likelihood": 4,
+            "impact": 4,
+            "detectability": 5
+          },
+          "scaled": {
+            "response": 5.0,
+            "likelihood": 4.0,
+            "impact": 4.0,
+            "detectability": 5.0
+          },
+          "provided": {
+            "response": true,
+            "likelihood": true,
+            "impact": true,
+            "detectability": true
+          },
+          "complete": true,
+          "base": 4.5,
+          "severity": 0.875
+        },
+        "I012": {
+          "domain": "decision_governance",
+          "category": "escalation_gaps",
+          "nature": "decision_governance",
+          "polarity": "risk_when_absent",
+          "weights": {
+            "domain": 1.1,
+            "nature": 1.2,
+            "indicator": 1.2
+          },
+          "domain_weight": 1.1,
+          "weight_ex_domain": 1.44,
+          "inputs": {
+            "response": "no",
+            "likelihood": 4,
+            "impact": 5,
+            "detectability": 5
+          },
+          "scaled": {
+            "response": 5.0,
+            "likelihood": 4.0,
+            "impact": 5.0,
+            "detectability": 5.0
+          },
+          "provided": {
+            "response": true,
+            "likelihood": true,
+            "impact": true,
+            "detectability": true
+          },
+          "complete": true,
+          "base": 4.75,
+          "severity": 0.9375
+        }
+      }
+    },
+    {
+      "key": "local_scores",
+      "value": {
+        "I001": 1.1171875,
+        "I002": 1.34765625,
+        "I003": 0.826875,
+        "I004": 0.6875,
+        "I005": 0.65625,
+        "I006": 0.9384375000000003,
+        "I007": 0.8662500000000002,
+        "I008": 1.035,
+        "I009": 0.94875,
+        "I010": 1.155,
+        "I011": 1.2075,
+        "I012": 1.3499999999999999
+      }
+    }
+  ]
+}
