@@ -101,6 +101,17 @@ def score_indicators(
         i = impact.get(indicator_id, 3)
         d = detectability.get(indicator_id, 3)
 
+        # Track which axes were actually supplied. A missing axis is scored with
+        # the neutral default above so the pipeline still runs, but we record the
+        # gap so it can be surfaced (and audited) rather than hidden. See
+        # praf.config.validation for the aggregate completeness report.
+        provided = {
+            "response": responses.get(indicator_id) is not None,
+            "likelihood": likelihood.get(indicator_id) is not None,
+            "impact": impact.get(indicator_id) is not None,
+            "detectability": detectability.get(indicator_id) is not None,
+        }
+
         r_raw = _response_scale(indicator.answer_type.value, r)
         # Apply polarity: for protective controls (risk when the control is
         # ABSENT) an affirmative answer lowers risk, so invert the raw axis
@@ -150,6 +161,8 @@ def score_indicators(
             "weight_ex_domain": weight_ex_domain,
             "inputs": {"response": r, "likelihood": l, "impact": i, "detectability": d},
             "scaled": {"response": r_scale, "likelihood": l_scale, "impact": i_scale, "detectability": d_scale},
+            "provided": provided,
+            "complete": all(provided.values()),
             "base": base,
             "severity": severity,
         }

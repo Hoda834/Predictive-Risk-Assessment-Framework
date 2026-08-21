@@ -21,6 +21,12 @@ class DomainClassification:
 
 
 def classify_domains(domain_scores: Dict[RiskDomain, float], low_threshold: float, high_threshold: float) -> Dict[RiskDomain, DomainClassification]:
+    # Reject an inverted band pair up front: without this, low >= high would
+    # silently flip every classification instead of raising.
+    from praf.config.validation import validate_thresholds
+
+    validate_thresholds(low_threshold, high_threshold)
+
     results: Dict[RiskDomain, DomainClassification] = {}
     for domain, score in domain_scores.items():
         s = float(score)

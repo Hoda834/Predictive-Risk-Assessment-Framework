@@ -6,6 +6,16 @@ from typing import Dict, Any
 from praf.domain.domains import RiskDomain
 
 
+def _clamp_0_100(value: float) -> float:
+    """Bound an index to the [0, 100] range.
+
+    The upper cap prevents a large domain weight from producing an out-of-range
+    index; the lower floor guards against a negative contribution (e.g. from a
+    misconfigured negative weight) silently reading as a valid low score.
+    """
+    return float(max(0.0, min(100.0, value)))
+
+
 @dataclass(frozen=True)
 class AggregatedResult:
     domain_scores: Dict[RiskDomain, float]
@@ -60,18 +70,23 @@ def aggregate_scores(indicator_details: Dict[str, Dict[str, Any]], local_scores:
 
         category_sum[category] = float(category_sum.get(category, 0.0) + contribution)
         category_weight_ex[category] = float(category_weight_ex.get(category, 0.0) + weight)
-        category_dw[category] = dw
+        # A category maps to a single domain today, but nothing structurally
+        # guarantees it, and a plain assignment would keep whichever indicator
+        # was seen *last* (order-dependent, non-deterministic). Take the maximum
+        # domain weight so the result is stable and errs toward the more
+        # conservative (higher-sensitivity) side.
+        category_dw[category] = max(category_dw.get(category, 0.0), dw)
 
     domain_index: Dict[RiskDomain, float] = {}
     for d in domain_sum:
         w = domain_weight_ex.get(d, 0.0)
         base_index = 100.0 * domain_sum[d] / w if w > 0.0 else 0.0
-        domain_index[d] = float(min(100.0, base_index * domain_dw.get(d, 1.0)))
+        domain_index[d] = _clamp_0_100(base_index * domain_dw.get(d, 1.0))
 
     category_index: Dict[str, float] = {}
     for k in category_sum:
         w = category_weight_ex.get(k, 0.0)
         base_index = 100.0 * category_sum[k] / w if w > 0.0 else 0.0
-        category_index[k] = float(min(100.0, base_index * category_dw.get(k, 1.0)))
+        category_index[k] = _clamp_0_100(base_index * category_dw.get(k, 1.0))
 
     return AggregatedResult(domain_scores=domain_index, category_scores=category_index, domain_counts=domain_counts)
