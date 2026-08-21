@@ -4,10 +4,22 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "praf"
-version = "0.1.0"
+version = "0.3.0"
 description = "Predictive Risk Assessment Framework"
 requires-python = ">=3.10"
+# The core scoring engine has no third-party runtime dependencies; streamlit is
+# only needed for the optional interactive app (app.py) and is declared as an
+# optional extra so `pip install praf` does not drag in the whole web stack.
 dependencies = []
+
+[project.optional-dependencies]
+app = ["streamlit>=1.36.0,<2.0.0"]
+dev = ["pytest>=7.0"]
+
+[tool.pytest.ini_options]
+# Let `pytest` work from a fresh clone without an editable install.
+pythonpath = ["src"]
+testpaths = ["tests"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

@@ -1,0 +1,7 @@
+scope,key,weight
+domain,design_maturity,1.25
+domain,supply_chain,1.35
+nature,structural,1.25
+nature,external_dependency,1.15
+indicator,I001,1.10
+indicator,I008,1.20

@@ -1,6 +1,4 @@
-import json
 import uuid
-from pathlib import Path
 import streamlit as st
 
 from praf.domain import Activity, ProjectStage, Context
@@ -59,6 +57,11 @@ st.subheader("Map risks to patterns")
 
 pattern_options = [p.value for p in RiskPattern]
 
+# Collect a removal request and apply it *after* the loop. Mutating the list
+# with pop(idx) while iterating shifts every later index and can remove the
+# wrong row on the next rerun.
+remove_id = None
+
 for idx, r in enumerate(st.session_state.risks):
     st.markdown(f"### Risk {idx + 1}: {r['risk_id']}")
     st.write(r["description"])
@@ -83,10 +86,14 @@ for idx, r in enumerate(st.session_state.risks):
     with c5:
         r["detectability"] = st.slider(f"Detectability {r['risk_id']}", 1, 5, int(r["detectability"]))
 
-    remove = st.button(f"Remove {r['risk_id']}")
-    if remove:
-        st.session_state.risks.pop(idx)
-        st.rerun()
+    if st.button(f"Remove {r['risk_id']}"):
+        remove_id = r["risk_id"]
+
+if remove_id is not None:
+    st.session_state.risks = [
+        r for r in st.session_state.risks if r["risk_id"] != remove_id
+    ]
+    st.rerun()
 
 st.divider()
 

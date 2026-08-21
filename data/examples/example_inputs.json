@@ -58,5 +58,37 @@
     "I010": 5,
     "I011": 5,
     "I012": 5
-  }
+  },
+  "controls": [
+    {
+      "control_id": "C001",
+      "name": "Design assumptions register with owner sign-off",
+      "indicator_ids": ["I001"],
+      "status": "verified",
+      "likelihood_reduction": 2,
+      "detectability_reduction": 1,
+      "description": "All key design assumptions logged, owned, and reviewed at each design gate.",
+      "evidence": "Assumptions register v1.2, design review minutes 2026-05-14"
+    },
+    {
+      "control_id": "C002",
+      "name": "Automated QC trend monitoring on CTQ parameters",
+      "indicator_ids": ["I005", "I006", "I007"],
+      "status": "implemented",
+      "likelihood_reduction": 1,
+      "detectability_reduction": 2,
+      "description": "SPC dashboards with alert thresholds on critical-to-quality parameters.",
+      "evidence": "QC dashboard release 0.9; verification protocol pending"
+    },
+    {
+      "control_id": "C003",
+      "name": "Second-source qualification for critical reagents",
+      "indicator_ids": ["I008"],
+      "status": "planned",
+      "likelihood_reduction": 2,
+      "detectability_reduction": 0,
+      "description": "Qualify an alternate supplier for single-sourced critical components.",
+      "evidence": ""
+    }
+  ]
 }
