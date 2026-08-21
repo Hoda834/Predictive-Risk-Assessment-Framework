@@ -1,4 +1,4 @@
-pandas>=2.0.0
-streamlit==1.36.0
+# Runtime for the interactive app (app.py). The core engine needs none of this.
+streamlit>=1.36.0,<2.0.0
 setuptools>=68
 -e .
